@@ -158,7 +158,7 @@ export default function HomePage() {
             <div className="relative mb-5 aspect-[16/10] overflow-hidden rounded-2xl border border-white/10">
               <Image
                 src={birthdayDinnerPhoto}
-                alt="Davin and Hannah birthday dinner"
+                alt="Davin and Hannah gender reveal dinner"
                 fill
                 priority
                 unoptimized
