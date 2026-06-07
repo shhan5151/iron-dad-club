@@ -170,14 +170,12 @@ export default function HomePage() {
                 unoptimized
                 className="object-cover object-top"
               />
-              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,11,16,0)_58%,rgba(10,11,16,0.86)_100%)]" />
-              <div className="absolute inset-x-0 bottom-0 p-4">
-                <div>
-                  <p className="label-text text-cream/80">{siteCopy.afterLogin.memoryEyebrow}</p>
-                  <h2 className="mt-2 text-2xl font-black text-white">{siteCopy.afterLogin.memoryTitle}</h2>
-                  <p className="mt-2 text-sm leading-6 text-cream/82">{siteCopy.afterLogin.memoryDescription}</p>
-                </div>
-              </div>
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+              <p className="label-text text-cream/70">{siteCopy.afterLogin.memoryEyebrow}</p>
+              <h2 className="mt-2 text-2xl font-black text-white">{siteCopy.afterLogin.memoryTitle}</h2>
+              <p className="mt-3 text-sm leading-7 text-cream/75">{siteCopy.afterLogin.memoryDescription}</p>
             </div>
 
             <div className="mt-5 grid grid-cols-3 gap-3">
