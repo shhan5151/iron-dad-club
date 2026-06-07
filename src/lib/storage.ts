@@ -1,7 +1,8 @@
-import { coupons, type Coupon } from "@/lib/coupons";
+import { defaultCoupons, type Coupon } from "@/lib/coupons";
 
 const LOGIN_KEY = "iron-dad-club.logged-in";
 const COUPON_STATE_KEY = "iron-dad-club.coupons";
+const CUSTOM_COUPONS_KEY = "iron-dad-club.custom-coupons";
 const RECORDS_KEY = "iron-dad-club.records";
 
 export type CouponState = Record<string, number>;
@@ -18,8 +19,8 @@ function canUseStorage() {
   return typeof window !== "undefined" && Boolean(window.localStorage);
 }
 
-function defaultCouponState(): CouponState {
-  return Object.fromEntries(coupons.map((coupon) => [coupon.id, coupon.initialUses]));
+function defaultCouponState(couponList: Coupon[] = defaultCoupons): CouponState {
+  return Object.fromEntries(couponList.map((coupon) => [coupon.id, coupon.initialUses]));
 }
 
 function readJson<T>(key: string, fallback: T): T {
@@ -56,7 +57,7 @@ export function login() {
   window.localStorage.setItem(LOGIN_KEY, "true");
   const existing = readJson<CouponState | null>(COUPON_STATE_KEY, null);
   if (!existing) {
-    writeJson(COUPON_STATE_KEY, defaultCouponState());
+    writeJson(COUPON_STATE_KEY, defaultCouponState(getCoupons()));
   }
 }
 
@@ -67,10 +68,24 @@ export function clearSession() {
   window.localStorage.removeItem(LOGIN_KEY);
 }
 
-export function getCouponState(): CouponState {
-  const saved = readJson<CouponState>(COUPON_STATE_KEY, defaultCouponState());
-  const defaults = defaultCouponState();
+export function getCoupons(): Coupon[] {
+  return readJson<Coupon[]>(CUSTOM_COUPONS_KEY, defaultCoupons);
+}
+
+export function getCouponState(couponList: Coupon[] = getCoupons()): CouponState {
+  const saved = readJson<CouponState>(COUPON_STATE_KEY, defaultCouponState(couponList));
+  const defaults = defaultCouponState(couponList);
   return { ...defaults, ...saved };
+}
+
+export function saveCouponManagerState(couponList: Coupon[], state: CouponState) {
+  writeJson(CUSTOM_COUPONS_KEY, couponList);
+  writeJson(COUPON_STATE_KEY, state);
+}
+
+export function resetCouponManagerState() {
+  writeJson(CUSTOM_COUPONS_KEY, defaultCoupons);
+  writeJson(COUPON_STATE_KEY, defaultCouponState(defaultCoupons));
 }
 
 export function getRecords(): RedemptionRecord[] {
