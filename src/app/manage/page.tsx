@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import type { SiteCopy } from "@/lib/copy";
 import type { Coupon } from "@/lib/coupons";
 import {
   approveRedemptionRequest,
-  getCoupons,
   getCouponState,
+  getCoupons,
   getRecords,
+  getSiteCopy,
   rejectRedemptionRequest,
   resetCouponManagerState,
   saveCouponManagerState,
@@ -52,7 +53,7 @@ function toCoupon(item: EditableCoupon): Coupon {
     id: item.id,
     code: item.code.trim(),
     category: item.category.trim(),
-    title: item.title.trim() || "未命名券",
+    title: item.title.trim() || "未命名票券",
     effect: item.effect.trim(),
     redeemableFor: toLines(item.redeemableForText),
     usableFor: toLines(item.usableForText),
@@ -63,13 +64,20 @@ function toCoupon(item: EditableCoupon): Coupon {
   };
 }
 
+function moveInArray<T>(list: T[], fromIndex: number, toIndex: number) {
+  const next = [...list];
+  const [item] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, item);
+  return next;
+}
+
 export default function ManagePage() {
-  const router = useRouter();
   const [ready, setReady] = useState(false);
   const [adminAuthed, setAdminAuthed] = useState(false);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [items, setItems] = useState<EditableCoupon[]>([]);
+  const [siteCopy, setSiteCopy] = useState<SiteCopy>(getSiteCopy());
   const [message, setMessage] = useState("");
   const [records, setRecords] = useState<RedemptionRecord[]>([]);
 
@@ -82,9 +90,18 @@ export default function ManagePage() {
       const state = getCouponState(coupons);
       setItems(coupons.map((coupon) => toEditable(coupon, state)));
       setRecords(getRecords());
+      setSiteCopy(getSiteCopy());
     }
     setReady(true);
-  }, [router]);
+  }, []);
+
+  function loadManagerData() {
+    const coupons = getCoupons();
+    const state = getCouponState(coupons);
+    setItems(coupons.map((coupon) => toEditable(coupon, state)));
+    setRecords(getRecords());
+    setSiteCopy(getSiteCopy());
+  }
 
   function handleAdminLogin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -94,10 +111,7 @@ export default function ManagePage() {
     }
 
     window.localStorage.setItem(ADMIN_SESSION_KEY, "true");
-    const coupons = getCoupons();
-    const state = getCouponState(coupons);
-    setItems(coupons.map((coupon) => toEditable(coupon, state)));
-    setRecords(getRecords());
+    loadManagerData();
     setAdminAuthed(true);
     setError("");
   }
@@ -107,42 +121,75 @@ export default function ManagePage() {
     setMessage("");
   }
 
+  function moveItem(id: string, direction: "up" | "down") {
+    setItems((current) => {
+      const index = current.findIndex((item) => item.id === id);
+      if (index === -1) {
+        return current;
+      }
+      const targetIndex = direction === "up" ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= current.length) {
+        return current;
+      }
+      return moveInArray(current, index, targetIndex);
+    });
+    setMessage("");
+  }
+
+  function updateBeforeLogin(patch: Partial<SiteCopy["beforeLogin"]>) {
+    setSiteCopy((current) => ({
+      ...current,
+      beforeLogin: {
+        ...current.beforeLogin,
+        ...patch,
+      },
+    }));
+    setMessage("");
+  }
+
+  function updateAfterLogin(patch: Partial<SiteCopy["afterLogin"]>) {
+    setSiteCopy((current) => ({
+      ...current,
+      afterLogin: {
+        ...current.afterLogin,
+        ...patch,
+      },
+    }));
+    setMessage("");
+  }
+
   function saveChanges() {
     const nextCoupons = items.map(toCoupon);
-    const nextState = Object.fromEntries(
-      items.map((item) => [item.id, Math.max(0, Number(item.remaining) || 0)]),
-    );
+    const nextState = Object.fromEntries(items.map((item) => [item.id, Math.max(0, Number(item.remaining) || 0)]));
 
-    saveCouponManagerState(nextCoupons, nextState);
+    saveCouponManagerState(nextCoupons, nextState, siteCopy);
     setItems(nextCoupons.map((coupon) => toEditable(coupon, nextState)));
-    setMessage("已儲存。Davin 的自由模式規格已更新。");
+    setMessage("已儲存。前台文案與票券順序都更新了。");
   }
 
   function resetDefaults() {
     resetCouponManagerState();
-    const coupons = getCoupons();
-    const state = getCouponState(coupons);
-    setItems(coupons.map((coupon) => toEditable(coupon, state)));
-    setMessage("已還原預設券包內容與次數。");
+    loadManagerData();
+    setMessage("已還原成預設內容與順序。");
   }
 
   function approveRequest(requestId: string) {
     const result = approveRedemptionRequest(requestId);
     if (!result.ok) {
-      setMessage("這張券目前沒有可扣次數，無法批准。");
+      setMessage("批准失敗，可能是該票券次數已用完或資料不同步。");
       return;
     }
     const coupons = getCoupons();
     const state = getCouponState(coupons);
     setItems(coupons.map((coupon) => toEditable(coupon, state)));
     setRecords(getRecords());
-    setMessage("已批准申請，券次也已扣除。");
+    setMessage("已批准申請，票券次數也同步扣除了。");
   }
 
   function rejectRequest(requestId: string) {
     rejectRedemptionRequest(requestId);
     setRecords(getRecords());
-    setMessage("已將這筆申請標記為婉拒。");
+    setMessage("已婉拒這次申請。");
   }
 
   if (!ready) {
@@ -155,9 +202,9 @@ export default function ManagePage() {
         <section className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-5 py-8">
           <div className="premium-card p-5">
             <p className="label-text">HANNAH CONTROL</p>
-            <h1 className="mt-3 text-3xl font-black text-white">管理券包</h1>
+            <h1 className="mt-3 text-3xl font-black text-white">後台管理</h1>
             <p className="mt-3 text-sm leading-7 text-cream/70">
-              這裡是隱藏管理頁，不會出現在 Davin 的券包首頁。
+              這裡可以調整 Davin 看到的票券內容、前台文案與申請批准狀態。
             </p>
 
             <form className="mt-6 space-y-4" onSubmit={handleAdminLogin}>
@@ -175,10 +222,10 @@ export default function ManagePage() {
               </label>
               {error ? <p className="text-sm font-semibold text-red-300">{error}</p> : null}
               <button className="primary-button w-full" type="submit">
-                進入管理
+                進入後台
               </button>
               <Link className="ghost-button w-full justify-center py-4" href="/">
-                返回 Davin 券包
+                回到 Davin 前台
               </Link>
             </form>
           </div>
@@ -194,16 +241,16 @@ export default function ManagePage() {
       <section className="mx-auto min-h-dvh max-w-md px-4 pb-28 pt-5">
         <nav className="mb-5 flex items-center justify-between">
           <Link className="ghost-button" href="/">
-            返回券包
+            回到前台
           </Link>
           <p className="label-text">PASS MANAGER</p>
         </nav>
 
         <header className="premium-card p-5">
           <p className="label-text">IRON DAD CLUB</p>
-          <h1 className="mt-3 text-3xl font-black text-white">管理券包</h1>
+          <h1 className="mt-3 text-3xl font-black text-white">後台管理</h1>
           <p className="mt-3 text-sm leading-7 text-cream/70">
-            可調整每張券的文字、規則、備註、期限與剩餘次數。每個多行欄位一行代表一個項目。
+            你可以在這裡改票券內容、調整票券順序，還有修改登入前與登入後的前台文案。
           </p>
         </header>
 
@@ -225,7 +272,7 @@ export default function ManagePage() {
                 <article className="premium-card p-5" key={record.id}>
                   <p className="label-text">REQUEST</p>
                   <h3 className="mt-2 text-xl font-black text-white">{record.couponTitle}</h3>
-                  <p className="mt-2 text-sm text-cream/65">送出時間 {record.requestedAt}</p>
+                  <p className="mt-2 text-sm text-cream/65">申請時間：{record.requestedAt}</p>
                   <div className="mt-5 grid grid-cols-2 gap-3">
                     <button className="ghost-button justify-center py-4" onClick={() => rejectRequest(record.id)} type="button">
                       婉拒
@@ -238,18 +285,99 @@ export default function ManagePage() {
               ))
             ) : (
               <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 text-sm text-cream/60">
-                目前沒有待批准的自由模式申請。
+                目前沒有新的申請在等待你處理。
               </div>
             )}
           </div>
         </section>
 
+        <section className="mt-5 premium-card p-5">
+          <p className="label-text">FRONT COPY</p>
+          <h2 className="mt-2 text-2xl font-black text-white">登入前文案</h2>
+          <div className="mt-5 grid gap-4">
+            <label className="field-label">
+              <span>主標題</span>
+              <input
+                value={siteCopy.beforeLogin.title}
+                onChange={(event) => updateBeforeLogin({ title: event.target.value })}
+              />
+            </label>
+            <label className="field-label">
+              <span>附標</span>
+              <input
+                value={siteCopy.beforeLogin.subtitle}
+                onChange={(event) => updateBeforeLogin({ subtitle: event.target.value })}
+              />
+            </label>
+            <label className="field-label">
+              <span>卡片標題</span>
+              <input
+                value={siteCopy.beforeLogin.cardTitle}
+                onChange={(event) => updateBeforeLogin({ cardTitle: event.target.value })}
+              />
+            </label>
+            <label className="field-label">
+              <span>文案</span>
+              <textarea
+                rows={7}
+                value={siteCopy.beforeLogin.description}
+                onChange={(event) => updateBeforeLogin({ description: event.target.value })}
+              />
+            </label>
+          </div>
+        </section>
+
+        <section className="mt-5 premium-card p-5">
+          <p className="label-text">WALLET COPY</p>
+          <h2 className="mt-2 text-2xl font-black text-white">登入後文案</h2>
+          <div className="mt-5 grid gap-4">
+            <label className="field-label">
+              <span>主標題</span>
+              <input
+                value={siteCopy.afterLogin.title}
+                onChange={(event) => updateAfterLogin({ title: event.target.value })}
+              />
+            </label>
+            <label className="field-label">
+              <span>附標</span>
+              <input
+                value={siteCopy.afterLogin.subtitle}
+                onChange={(event) => updateAfterLogin({ subtitle: event.target.value })}
+              />
+            </label>
+            <label className="field-label">
+              <span>回憶照片上方小標</span>
+              <input
+                value={siteCopy.afterLogin.memoryEyebrow}
+                onChange={(event) => updateAfterLogin({ memoryEyebrow: event.target.value })}
+              />
+            </label>
+            <label className="field-label">
+              <span>回憶照片標題</span>
+              <input
+                value={siteCopy.afterLogin.memoryTitle}
+                onChange={(event) => updateAfterLogin({ memoryTitle: event.target.value })}
+              />
+            </label>
+            <label className="field-label">
+              <span>回憶照片文案</span>
+              <textarea
+                rows={5}
+                value={siteCopy.afterLogin.memoryDescription}
+                onChange={(event) => updateAfterLogin({ memoryDescription: event.target.value })}
+              />
+            </label>
+          </div>
+        </section>
+
         <div className="mt-5 space-y-5">
-          {items.map((item) => (
+          {items.map((item, index) => (
             <article className="premium-card p-5" key={item.id}>
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="label-text">{item.code}</p>
+                  <p className="label-text">
+                    #{index + 1} · {item.code}
+                  </p>
                   <h2 className="mt-2 text-xl font-black text-white">{item.title}</h2>
                 </div>
                 <label className="small-number-field">
@@ -261,6 +389,25 @@ export default function ManagePage() {
                     onChange={(event) => updateItem(item.id, { remaining: Number(event.target.value) })}
                   />
                 </label>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <button
+                  className="ghost-button justify-center py-3 disabled:opacity-35"
+                  disabled={index === 0}
+                  onClick={() => moveItem(item.id, "up")}
+                  type="button"
+                >
+                  往上移
+                </button>
+                <button
+                  className="ghost-button justify-center py-3 disabled:opacity-35"
+                  disabled={index === items.length - 1}
+                  onClick={() => moveItem(item.id, "down")}
+                  type="button"
+                >
+                  往下移
+                </button>
               </div>
 
               <div className="mt-5 grid gap-4">
@@ -342,7 +489,7 @@ export default function ManagePage() {
               還原預設
             </button>
             <button className="primary-button" onClick={saveChanges} type="button">
-              儲存修改
+              儲存變更
             </button>
           </div>
         </div>
