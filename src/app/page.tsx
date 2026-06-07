@@ -118,8 +118,8 @@ export default function HomePage() {
         <header className="space-y-5">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="label-text">Future Dad Premium Pass for Davin</p>
-              <h1 className="mt-2 text-4xl font-black tracking-[0.13em] text-gold">IRON DAD CLUB</h1>
+              <p className="label-text">Being a dad doesn&apos;t mean giving up being you.</p>
+              <h1 className="mt-2 text-4xl font-black tracking-[0.1em] text-gold">DADDY&apos;S FREE TIME TOKEN</h1>
             </div>
             <button className="ghost-button shrink-0" onClick={handleLogout} type="button">
               登出
@@ -134,9 +134,13 @@ export default function HomePage() {
               </div>
               <div className="bib-number">140.6</div>
             </div>
-            <p className="mt-5 text-sm leading-7 text-cream/78">
-              這不是普通的生日禮物，而是一份給未來爸爸的自由通行證。當你需要運動、比賽、放空，或只是想做回 Davin，請啟動這張 Pass。
-            </p>
+            <div className="mt-5 space-y-3 text-sm leading-7 text-cream/78">
+              <p>有些時間屬於家庭， 有些時間屬於夢想。</p>
+              <p>
+                而這些 Token，是 Hannah 與 Elara 預留給你的自由額度。當你想騎車、比賽、放空，或只是想做回 Davin 時，請放心使用。
+              </p>
+              <p>因為成為爸爸，不代表要放棄自己。 ❤️</p>
+            </div>
             <div className="mt-5 grid grid-cols-3 gap-3">
               <div className="metric-box">
                 <span>{couponList.length}</span>
