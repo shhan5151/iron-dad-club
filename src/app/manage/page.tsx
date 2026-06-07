@@ -346,21 +346,21 @@ export default function ManagePage() {
               />
             </label>
             <label className="field-label">
-              <span>回憶照片上方小標</span>
+              <span>照片下方卡片小標</span>
               <input
                 value={siteCopy.afterLogin.memoryEyebrow}
                 onChange={(event) => updateAfterLogin({ memoryEyebrow: event.target.value })}
               />
             </label>
             <label className="field-label">
-              <span>回憶照片標題</span>
+              <span>照片下方卡片標題</span>
               <input
                 value={siteCopy.afterLogin.memoryTitle}
                 onChange={(event) => updateAfterLogin({ memoryTitle: event.target.value })}
               />
             </label>
             <label className="field-label">
-              <span>回憶照片文案</span>
+              <span>照片下方卡片文案</span>
               <textarea
                 rows={5}
                 value={siteCopy.afterLogin.memoryDescription}
