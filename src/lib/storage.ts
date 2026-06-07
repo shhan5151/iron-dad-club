@@ -11,8 +11,9 @@ export type RedemptionRecord = {
   id: string;
   couponId: string;
   couponTitle: string;
-  redeemedAt: string;
-  status: "已批准";
+  requestedAt: string;
+  resolvedAt?: string;
+  status: "待批准" | "已批准" | "已婉拒";
 };
 
 function canUseStorage() {
@@ -92,34 +93,82 @@ export function getRecords(): RedemptionRecord[] {
   return readJson<RedemptionRecord[]>(RECORDS_KEY, []);
 }
 
-export function redeemCoupon(coupon: Coupon): { ok: boolean } {
+function formatTimestamp(date = new Date()) {
+  return new Intl.DateTimeFormat("zh-TW", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(date);
+}
+
+export function hasPendingRequest(couponId: string) {
+  return getRecords().some((record) => record.couponId === couponId && record.status === "待批准");
+}
+
+export function submitRedemptionRequest(coupon: Coupon): { ok: boolean; reason?: "empty" | "pending" } {
   const state = getCouponState();
   const remaining = state[coupon.id] ?? coupon.initialUses;
   if (remaining <= 0) {
-    return { ok: false };
+    return { ok: false, reason: "empty" };
+  }
+  if (hasPendingRequest(coupon.id)) {
+    return { ok: false, reason: "pending" };
+  }
+
+  const record: RedemptionRecord = {
+    id: `${coupon.id}-${Date.now()}`,
+    couponId: coupon.id,
+    couponTitle: coupon.title,
+    requestedAt: formatTimestamp(),
+    status: "待批准",
+  };
+
+  writeJson(RECORDS_KEY, [record, ...getRecords()]);
+  return { ok: true };
+}
+
+export function approveRedemptionRequest(requestId: string): { ok: boolean; reason?: "missing" | "empty" } {
+  const records = getRecords();
+  const target = records.find((record) => record.id === requestId);
+  if (!target) {
+    return { ok: false, reason: "missing" };
+  }
+
+  const coupons = getCoupons();
+  const coupon = coupons.find((item) => item.id === target.couponId);
+  if (!coupon) {
+    return { ok: false, reason: "missing" };
+  }
+
+  const state = getCouponState(coupons);
+  const remaining = state[coupon.id] ?? coupon.initialUses;
+  if (remaining <= 0) {
+    return { ok: false, reason: "empty" };
   }
 
   const nextState = {
     ...state,
     [coupon.id]: remaining - 1,
   };
-  const record: RedemptionRecord = {
-    id: `${coupon.id}-${Date.now()}`,
-    couponId: coupon.id,
-    couponTitle: coupon.title,
-    redeemedAt: new Intl.DateTimeFormat("zh-TW", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-    }).format(new Date()),
-    status: "已批准",
-  };
+  const resolvedAt = formatTimestamp();
+  const nextRecords = records.map((record) =>
+    record.id === requestId ? { ...record, status: "已批准" as const, resolvedAt } : record,
+  );
 
   writeJson(COUPON_STATE_KEY, nextState);
-  writeJson(RECORDS_KEY, [record, ...getRecords()]);
+  writeJson(RECORDS_KEY, nextRecords);
+  return { ok: true };
+}
+
+export function rejectRedemptionRequest(requestId: string): { ok: boolean } {
+  const records = getRecords();
+  const nextRecords = records.map((record) =>
+    record.id === requestId ? { ...record, status: "已婉拒" as const, resolvedAt: formatTimestamp() } : record,
+  );
+  writeJson(RECORDS_KEY, nextRecords);
   return { ok: true };
 }
