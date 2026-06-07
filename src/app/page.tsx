@@ -9,7 +9,7 @@ import { RegisterServiceWorker } from "@/components/RegisterServiceWorker";
 
 const PASSWORD = "ELARA0612";
 const DAVIN_BIKE_COAST_PHOTO = "/photos/davin-bike-coast.jpg";
-const MEMORY_COLLAGE_PHOTO = "/photos/memory-collage.jpg";
+const MEMORY_COLLAGE_PHOTO = "/photos/memory-collage.png";
 
 export default function HomePage() {
   const [ready, setReady] = useState(false);
