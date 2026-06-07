@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { notFound, useParams, useRouter } from "next/navigation";
-import { coupons } from "@/lib/coupons";
+import type { Coupon } from "@/lib/coupons";
 import {
+  getCoupons,
   getCouponState,
   getRecords,
   isLoggedIn,
@@ -16,7 +17,8 @@ import {
 export default function PassDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const coupon = useMemo(() => coupons.find((item) => item.id === params.id), [params.id]);
+  const [couponList, setCouponList] = useState<Coupon[]>([]);
+  const coupon = useMemo(() => couponList.find((item) => item.id === params.id), [couponList, params.id]);
   const [ready, setReady] = useState(false);
   const [state, setState] = useState<CouponState>({});
   const [records, setRecords] = useState<RedemptionRecord[]>([]);
@@ -28,17 +30,12 @@ export default function PassDetailPage() {
       router.replace("/");
       return;
     }
-    setState(getCouponState());
+    const savedCoupons = getCoupons();
+    setCouponList(savedCoupons);
+    setState(getCouponState(savedCoupons));
     setRecords(getRecords());
     setReady(true);
   }, [router]);
-
-  if (!coupon) {
-    notFound();
-  }
-
-  const remaining = state[coupon.id] ?? coupon.initialUses;
-  const relatedRecords = records.filter((record) => record.couponId === coupon.id);
 
   function handleRedeem() {
     if (!coupon) {
@@ -46,10 +43,10 @@ export default function PassDetailPage() {
     }
     const result = redeemCoupon(coupon);
     if (!result.ok) {
-      setState(getCouponState());
+      setState(getCouponState(couponList));
       return;
     }
-    setState(getCouponState());
+    setState(getCouponState(couponList));
     setRecords(getRecords());
     setConfirming(false);
     setSuccess("Hannah 已批准。Elara 今日由媽媽接管。Davin 可以安心出發。");
@@ -58,6 +55,13 @@ export default function PassDetailPage() {
   if (!ready) {
     return <main className="min-h-dvh bg-iron text-cream" />;
   }
+
+  if (!coupon) {
+    notFound();
+  }
+
+  const remaining = state[coupon.id] ?? coupon.initialUses;
+  const relatedRecords = records.filter((record) => record.couponId === coupon.id);
 
   return (
     <main className="min-h-dvh bg-iron text-cream">
