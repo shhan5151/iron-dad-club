@@ -12,7 +12,7 @@ export type Coupon = {
   initialUses: number;
 };
 
-export const coupons: Coupon[] = [
+export const defaultCoupons: Coupon[] = [
   {
     id: "triathlon-anytime",
     code: "TRI-001",
@@ -79,3 +79,5 @@ export const coupons: Coupon[] = [
     initialUses: 1,
   },
 ];
+
+export const coupons = defaultCoupons;
