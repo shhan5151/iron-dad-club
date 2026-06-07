@@ -5,11 +5,12 @@ import Link from "next/link";
 import { notFound, useParams, useRouter } from "next/navigation";
 import type { Coupon } from "@/lib/coupons";
 import {
+  hasPendingRequest,
   getCoupons,
   getCouponState,
   getRecords,
   isLoggedIn,
-  redeemCoupon,
+  submitRedemptionRequest,
   type CouponState,
   type RedemptionRecord,
 } from "@/lib/storage";
@@ -24,6 +25,7 @@ export default function PassDetailPage() {
   const [records, setRecords] = useState<RedemptionRecord[]>([]);
   const [confirming, setConfirming] = useState(false);
   const [success, setSuccess] = useState("");
+  const [pendingBlocked, setPendingBlocked] = useState(false);
 
   useEffect(() => {
     if (!isLoggedIn()) {
@@ -37,19 +39,20 @@ export default function PassDetailPage() {
     setReady(true);
   }, [router]);
 
-  function handleRedeem() {
+  function handleRequest() {
     if (!coupon) {
       return;
     }
-    const result = redeemCoupon(coupon);
+    const result = submitRedemptionRequest(coupon);
     if (!result.ok) {
-      setState(getCouponState(couponList));
+      setPendingBlocked(result.reason === "pending");
+      setRecords(getRecords());
       return;
     }
-    setState(getCouponState(couponList));
     setRecords(getRecords());
     setConfirming(false);
-    setSuccess("Hannah 已批准。Elara 今日由媽媽接管。Davin 可以安心出發。");
+    setPendingBlocked(true);
+    setSuccess("申請已送出，等待 Hannah 批准。");
   }
 
   if (!ready) {
@@ -62,6 +65,7 @@ export default function PassDetailPage() {
 
   const remaining = state[coupon.id] ?? coupon.initialUses;
   const relatedRecords = records.filter((record) => record.couponId === coupon.id);
+  const isPending = pendingBlocked || hasPendingRequest(coupon.id);
 
   return (
     <main className="min-h-dvh bg-iron text-cream">
@@ -152,11 +156,11 @@ export default function PassDetailPage() {
 
           <button
             className="primary-button mt-6 w-full disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/10 disabled:text-cream/35"
-            disabled={remaining <= 0}
+            disabled={remaining <= 0 || isPending}
             onClick={() => setConfirming(true)}
             type="button"
           >
-            {remaining <= 0 ? "已使用完畢" : "啟動自由模式"}
+            {remaining <= 0 ? "已使用完畢" : isPending ? "已送出申請" : "送出自由模式申請"}
           </button>
         </article>
 
@@ -168,9 +172,11 @@ export default function PassDetailPage() {
                 <div className="record-row" key={record.id}>
                   <div>
                     <p className="font-bold text-white">{record.couponTitle}</p>
-                    <p className="mt-1 text-xs text-cream/48">{record.redeemedAt}</p>
+                    <p className="mt-1 text-xs text-cream/48">
+                      {record.status === "待批准" ? `申請時間 ${record.requestedAt}` : `處理時間 ${record.resolvedAt ?? record.requestedAt}`}
+                    </p>
                   </div>
-                  <span>已批准</span>
+                  <span>{record.status}</span>
                 </div>
               ))
             ) : (
@@ -185,17 +191,17 @@ export default function PassDetailPage() {
       {confirming ? (
         <div className="fixed inset-0 z-50 grid place-items-end bg-black/70 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-3xl border border-gold/25 bg-[#111217] p-5 shadow-2xl">
-            <p className="label-text">REDEMPTION CONTROL</p>
-            <h2 className="mt-3 text-2xl font-black text-white">Hannah 是否批准 Davin 啟動自由模式？</h2>
+            <p className="label-text">REQUEST CONTROL</p>
+            <h2 className="mt-3 text-2xl font-black text-white">要送出申請給 Hannah 嗎？</h2>
             <p className="mt-3 text-sm leading-6 text-cream/65">
-              按下批准後將扣除一次額度，並寫入兌換紀錄。
+              送出後不會立刻扣次數，會等 Hannah 在管理頁決定是否批准。
             </p>
             <div className="mt-6 grid grid-cols-2 gap-3">
               <button className="ghost-button justify-center py-4" onClick={() => setConfirming(false)} type="button">
                 取消
               </button>
-              <button className="primary-button" onClick={handleRedeem} type="button">
-                批准兌換
+              <button className="primary-button" onClick={handleRequest} type="button">
+                送出申請
               </button>
             </div>
           </div>
