@@ -62,7 +62,7 @@ export default function HomePage() {
             <div className="mb-8 flex items-center justify-between">
               <div>
                 <p className="label-text">MEMBER ACCESS</p>
-                <h1 className="mt-2 text-4xl font-black tracking-[0.16em] text-gold">IRON DAD CLUB</h1>
+                <h1 className="mt-2 text-4xl font-black tracking-[0.1em] text-gold">DADDY&apos;S FREE TIME TOKEN</h1>
               </div>
               <div className="bib-number">40</div>
             </div>
@@ -70,15 +70,19 @@ export default function HomePage() {
             <div className="premium-card p-5">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="label-text">Future Dad Premium Pass</p>
+                  <p className="label-text">Being a dad doesn&apos;t mean giving up being you.</p>
                   <h2 className="mt-3 text-2xl font-extrabold text-white">Davin 專屬通行證</h2>
                 </div>
                 <span className="status-pill">ELARA READY</span>
               </div>
               <div className="my-5 h-px bg-gold/25" />
-              <p className="text-sm leading-7 text-cream/78">
-                這不是普通登入頁。這是進入未來爸爸自由權益中心的安檢口。
-              </p>
+              <div className="space-y-3 text-sm leading-7 text-cream/78">
+                <p>有些時間屬於家庭，有些時間屬於夢想。</p>
+                <p>
+                  而這些 Token，是 Hannah 與 Elara 預留給你的自由額度。當你想騎車、比賽、放空，或只是想做回 Davin 時，請放心使用。
+                </p>
+                <p>因為成為爸爸，不代表要放棄自己。 ❤️</p>
+              </div>
 
               <form className="mt-6 space-y-4" onSubmit={handleLogin}>
                 <label className="block">
@@ -135,7 +139,7 @@ export default function HomePage() {
               <div className="bib-number">140.6</div>
             </div>
             <div className="mt-5 space-y-3 text-sm leading-7 text-cream/78">
-              <p>有些時間屬於家庭， 有些時間屬於夢想。</p>
+              <p>有些時間屬於家庭，有些時間屬於夢想。</p>
               <p>
                 而這些 Token，是 Hannah 與 Elara 預留給你的自由額度。當你想騎車、比賽、放空，或只是想做回 Davin 時，請放心使用。
               </p>
