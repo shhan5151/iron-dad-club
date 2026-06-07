@@ -5,11 +5,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Coupon } from "@/lib/coupons";
 import {
+  approveRedemptionRequest,
   getCoupons,
   getCouponState,
+  getRecords,
+  rejectRedemptionRequest,
   resetCouponManagerState,
   saveCouponManagerState,
   type CouponState,
+  type RedemptionRecord,
 } from "@/lib/storage";
 
 const ADMIN_PASSWORD = "HANNAH0612";
@@ -67,6 +71,7 @@ export default function ManagePage() {
   const [error, setError] = useState("");
   const [items, setItems] = useState<EditableCoupon[]>([]);
   const [message, setMessage] = useState("");
+  const [records, setRecords] = useState<RedemptionRecord[]>([]);
 
   useEffect(() => {
     const authed = window.localStorage.getItem(ADMIN_SESSION_KEY) === "true";
@@ -76,6 +81,7 @@ export default function ManagePage() {
       const coupons = getCoupons();
       const state = getCouponState(coupons);
       setItems(coupons.map((coupon) => toEditable(coupon, state)));
+      setRecords(getRecords());
     }
     setReady(true);
   }, [router]);
@@ -91,6 +97,7 @@ export default function ManagePage() {
     const coupons = getCoupons();
     const state = getCouponState(coupons);
     setItems(coupons.map((coupon) => toEditable(coupon, state)));
+    setRecords(getRecords());
     setAdminAuthed(true);
     setError("");
   }
@@ -117,6 +124,25 @@ export default function ManagePage() {
     const state = getCouponState(coupons);
     setItems(coupons.map((coupon) => toEditable(coupon, state)));
     setMessage("已還原預設券包內容與次數。");
+  }
+
+  function approveRequest(requestId: string) {
+    const result = approveRedemptionRequest(requestId);
+    if (!result.ok) {
+      setMessage("這張券目前沒有可扣次數，無法批准。");
+      return;
+    }
+    const coupons = getCoupons();
+    const state = getCouponState(coupons);
+    setItems(coupons.map((coupon) => toEditable(coupon, state)));
+    setRecords(getRecords());
+    setMessage("已批准申請，券次也已扣除。");
+  }
+
+  function rejectRequest(requestId: string) {
+    rejectRedemptionRequest(requestId);
+    setRecords(getRecords());
+    setMessage("已將這筆申請標記為婉拒。");
   }
 
   if (!ready) {
@@ -161,6 +187,8 @@ export default function ManagePage() {
     );
   }
 
+  const pendingRequests = records.filter((record) => record.status === "待批准");
+
   return (
     <main className="min-h-dvh bg-iron text-cream">
       <section className="mx-auto min-h-dvh max-w-md px-4 pb-28 pt-5">
@@ -184,6 +212,37 @@ export default function ManagePage() {
             {message}
           </p>
         ) : null}
+
+        <section className="mt-5">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-lg font-black text-white">待批准申請</h2>
+            <span className="text-sm font-bold text-gold">{pendingRequests.length} 筆</span>
+          </div>
+
+          <div className="space-y-3">
+            {pendingRequests.length ? (
+              pendingRequests.map((record) => (
+                <article className="premium-card p-5" key={record.id}>
+                  <p className="label-text">REQUEST</p>
+                  <h3 className="mt-2 text-xl font-black text-white">{record.couponTitle}</h3>
+                  <p className="mt-2 text-sm text-cream/65">送出時間 {record.requestedAt}</p>
+                  <div className="mt-5 grid grid-cols-2 gap-3">
+                    <button className="ghost-button justify-center py-4" onClick={() => rejectRequest(record.id)} type="button">
+                      婉拒
+                    </button>
+                    <button className="primary-button" onClick={() => approveRequest(record.id)} type="button">
+                      批准
+                    </button>
+                  </div>
+                </article>
+              ))
+            ) : (
+              <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 text-sm text-cream/60">
+                目前沒有待批准的自由模式申請。
+              </div>
+            )}
+          </div>
+        </section>
 
         <div className="mt-5 space-y-5">
           {items.map((item) => (
