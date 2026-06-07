@@ -3,13 +3,34 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import type { SiteCopy } from "@/lib/copy";
 import type { Coupon } from "@/lib/coupons";
-import { clearSession, getCoupons, getCouponState, isLoggedIn, login, type CouponState } from "@/lib/storage";
+import {
+  clearSession,
+  getCouponState,
+  getCoupons,
+  getSiteCopy,
+  isLoggedIn,
+  login,
+  type CouponState,
+} from "@/lib/storage";
 import { RegisterServiceWorker } from "@/components/RegisterServiceWorker";
 
 const PASSWORD = "ELARA0612";
 const DAVIN_BIKE_COAST_PHOTO = "/photos/davin-bike-coast.jpg";
 const MEMORY_COLLAGE_PHOTO = "/photos/memory-collage.png";
+
+function renderParagraphs(text: string) {
+  return text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => (
+      <p key={line} className="text-sm leading-7 text-cream/78">
+        {line}
+      </p>
+    ));
+}
 
 export default function HomePage() {
   const [ready, setReady] = useState(false);
@@ -18,12 +39,14 @@ export default function HomePage() {
   const [error, setError] = useState("");
   const [state, setState] = useState<CouponState>({});
   const [couponList, setCouponList] = useState<Coupon[]>([]);
+  const [siteCopy, setSiteCopy] = useState<SiteCopy>(getSiteCopy());
 
   useEffect(() => {
     const savedCoupons = getCoupons();
     setAuthenticated(isLoggedIn());
     setCouponList(savedCoupons);
     setState(getCouponState(savedCoupons));
+    setSiteCopy(getSiteCopy());
     setReady(true);
   }, []);
 
@@ -43,6 +66,7 @@ export default function HomePage() {
     setAuthenticated(true);
     setCouponList(savedCoupons);
     setState(getCouponState(savedCoupons));
+    setSiteCopy(getSiteCopy());
   }
 
   function handleLogout() {
@@ -72,26 +96,23 @@ export default function HomePage() {
             <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,11,16,0.28)_0%,rgba(10,11,16,0.7)_38%,rgba(10,11,16,0.94)_100%)]" />
           </div>
           <div className="pass-grid" />
+
           <div className="relative z-10">
             <div className="mb-8 flex items-center justify-between">
               <div>
                 <p className="label-text">MEMBER ACCESS</p>
-                <h1 className="mt-2 text-4xl font-black tracking-[0.1em] text-gold">DADDY&apos;S FREE TIME TOKEN</h1>
+                <h1 className="mt-2 text-4xl font-black tracking-[0.1em] text-gold">{siteCopy.beforeLogin.title}</h1>
               </div>
               <div className="bib-number">40</div>
             </div>
 
             <div className="premium-card p-5">
               <div>
-                <p className="label-text">Being a dad doesn&apos;t mean giving up being you.</p>
-                <h2 className="mt-3 text-2xl font-extrabold text-white">Davin 專屬通行證</h2>
+                <p className="label-text">{siteCopy.beforeLogin.subtitle}</p>
+                <h2 className="mt-3 text-2xl font-extrabold text-white">{siteCopy.beforeLogin.cardTitle}</h2>
               </div>
               <div className="my-5 h-px bg-gold/25" />
-              <div className="space-y-3 text-sm leading-7 text-cream/78">
-                <p>有些時間屬於家庭，有些時間屬於夢想。</p>
-                <p>而這些 Token，是 Hannah 與 Elara 預留給你的自由額度。當你想騎車、比賽、放空，或只是想做回 Davin 時，請放心使用。</p>
-                <p>因為成為爸爸，不代表要放棄自己 ❤️</p>
-              </div>
+              <div className="space-y-3">{renderParagraphs(siteCopy.beforeLogin.description)}</div>
 
               <form className="mt-6 space-y-4" onSubmit={handleLogin}>
                 <label className="block">
@@ -131,8 +152,8 @@ export default function HomePage() {
         <header className="space-y-5">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="label-text">Being a dad doesn't mean giving up being you.</p>
-              <h1 className="mt-2 text-4xl font-black tracking-[0.1em] text-gold">DADDY&apos;S FREE TIME TOKEN</h1>
+              <p className="label-text">{siteCopy.afterLogin.subtitle}</p>
+              <h1 className="mt-2 text-4xl font-black tracking-[0.1em] text-gold">{siteCopy.afterLogin.title}</h1>
             </div>
             <button className="ghost-button shrink-0" onClick={handleLogout} type="button">
               登出
@@ -152,12 +173,13 @@ export default function HomePage() {
               <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,11,16,0)_58%,rgba(10,11,16,0.86)_100%)]" />
               <div className="absolute inset-x-0 bottom-0 p-4">
                 <div>
-                  <p className="label-text text-cream/80">2020-2026</p>
-                  <h2 className="mt-2 text-2xl font-black text-white">Davin & Hannah</h2>
-                  <p className="mt-2 text-sm leading-6 text-cream/82">從第一次合照，到紐西蘭、求婚、第一個寶寶，這張 Pass 也是你們一起走到今天的紀念票。</p>
+                  <p className="label-text text-cream/80">{siteCopy.afterLogin.memoryEyebrow}</p>
+                  <h2 className="mt-2 text-2xl font-black text-white">{siteCopy.afterLogin.memoryTitle}</h2>
+                  <p className="mt-2 text-sm leading-6 text-cream/82">{siteCopy.afterLogin.memoryDescription}</p>
                 </div>
               </div>
             </div>
+
             <div className="mt-5 grid grid-cols-3 gap-3">
               <div className="metric-box">
                 <span>{couponList.length}</span>
