@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { coupons } from "@/lib/coupons";
-import { clearSession, getCouponState, isLoggedIn, login, type CouponState } from "@/lib/storage";
+import type { Coupon } from "@/lib/coupons";
+import { clearSession, getCoupons, getCouponState, isLoggedIn, login, type CouponState } from "@/lib/storage";
 import { RegisterServiceWorker } from "@/components/RegisterServiceWorker";
 
 const PASSWORD = "ELARA0612";
@@ -14,16 +14,19 @@ export default function HomePage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [state, setState] = useState<CouponState>({});
+  const [couponList, setCouponList] = useState<Coupon[]>([]);
 
   useEffect(() => {
+    const savedCoupons = getCoupons();
     setAuthenticated(isLoggedIn());
-    setState(getCouponState());
+    setCouponList(savedCoupons);
+    setState(getCouponState(savedCoupons));
     setReady(true);
   }, []);
 
   const totalRemaining = useMemo(
-    () => coupons.reduce((total, coupon) => total + (state[coupon.id] ?? coupon.initialUses), 0),
-    [state],
+    () => couponList.reduce((total, coupon) => total + (state[coupon.id] ?? coupon.initialUses), 0),
+    [couponList, state],
   );
 
   function handleLogin(event: React.FormEvent<HTMLFormElement>) {
@@ -33,8 +36,10 @@ export default function HomePage() {
       return;
     }
     login();
+    const savedCoupons = getCoupons();
     setAuthenticated(true);
-    setState(getCouponState());
+    setCouponList(savedCoupons);
+    setState(getCouponState(savedCoupons));
   }
 
   function handleLogout() {
@@ -134,7 +139,7 @@ export default function HomePage() {
             </p>
             <div className="mt-5 grid grid-cols-3 gap-3">
               <div className="metric-box">
-                <span>{coupons.length}</span>
+                <span>{couponList.length}</span>
                 <p>券種</p>
               </div>
               <div className="metric-box">
@@ -157,7 +162,7 @@ export default function HomePage() {
         </div>
 
         <div className="mt-4 space-y-3">
-          {coupons.map((coupon) => {
+          {couponList.map((coupon) => {
             const remaining = state[coupon.id] ?? coupon.initialUses;
             return (
               <Link className="coupon-row" href={`/pass/${coupon.id}`} key={coupon.id}>
