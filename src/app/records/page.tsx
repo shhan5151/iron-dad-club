@@ -30,14 +30,14 @@ export default function RecordsPage() {
           <Link className="ghost-button" href="/">
             返回券包
           </Link>
-          <p className="label-text">APPROVED LOG</p>
+          <p className="label-text">REQUEST LOG</p>
         </nav>
 
         <header className="premium-card p-5">
           <p className="label-text">IRON DAD CLUB</p>
           <h1 className="mt-3 text-3xl font-black text-white">兌換紀錄</h1>
           <p className="mt-3 text-sm leading-7 text-cream/70">
-            每一次自由模式啟動，都是未來爸爸維持戰力的重要里程碑。
+            這裡會顯示 Davin 送出的申請，以及 Hannah 的審核結果。
           </p>
         </header>
 
@@ -47,7 +47,11 @@ export default function RecordsPage() {
               <article className="record-row" key={record.id}>
                 <div>
                   <p className="font-black text-white">{record.couponTitle}</p>
-                  <p className="mt-1 text-xs text-cream/48">{record.redeemedAt}</p>
+                  <p className="mt-1 text-xs text-cream/48">
+                    {record.status === "待批准"
+                      ? `申請時間 ${record.requestedAt}`
+                      : `處理時間 ${record.resolvedAt ?? record.requestedAt}`}
+                  </p>
                 </div>
                 <span>{record.status}</span>
               </article>
