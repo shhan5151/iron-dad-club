@@ -1,11 +1,15 @@
+import { defaultSiteCopy, type SiteCopy } from "@/lib/copy";
 import { defaultCoupons, type Coupon } from "@/lib/coupons";
 
 const LOGIN_KEY = "iron-dad-club.logged-in";
 const COUPON_STATE_KEY = "iron-dad-club.coupons";
 const CUSTOM_COUPONS_KEY = "iron-dad-club.custom-coupons";
 const RECORDS_KEY = "iron-dad-club.records";
+const SITE_COPY_KEY = "iron-dad-club.site-copy";
 
 export type CouponState = Record<string, number>;
+
+export type RedemptionStatus = "待批准" | "已批准" | "已婉拒";
 
 export type RedemptionRecord = {
   id: string;
@@ -13,7 +17,7 @@ export type RedemptionRecord = {
   couponTitle: string;
   requestedAt: string;
   resolvedAt?: string;
-  status: "待批准" | "已批准" | "已婉拒";
+  status: RedemptionStatus;
 };
 
 function canUseStorage() {
@@ -42,6 +46,19 @@ function writeJson<T>(key: string, value: T) {
     return;
   }
   window.localStorage.setItem(key, JSON.stringify(value));
+}
+
+function mergeSiteCopy(partial?: Partial<SiteCopy>): SiteCopy {
+  return {
+    beforeLogin: {
+      ...defaultSiteCopy.beforeLogin,
+      ...partial?.beforeLogin,
+    },
+    afterLogin: {
+      ...defaultSiteCopy.afterLogin,
+      ...partial?.afterLogin,
+    },
+  };
 }
 
 export function isLoggedIn() {
@@ -79,14 +96,20 @@ export function getCouponState(couponList: Coupon[] = getCoupons()): CouponState
   return { ...defaults, ...saved };
 }
 
-export function saveCouponManagerState(couponList: Coupon[], state: CouponState) {
+export function getSiteCopy(): SiteCopy {
+  return mergeSiteCopy(readJson<Partial<SiteCopy>>(SITE_COPY_KEY, defaultSiteCopy));
+}
+
+export function saveCouponManagerState(couponList: Coupon[], state: CouponState, siteCopy: SiteCopy) {
   writeJson(CUSTOM_COUPONS_KEY, couponList);
   writeJson(COUPON_STATE_KEY, state);
+  writeJson(SITE_COPY_KEY, siteCopy);
 }
 
 export function resetCouponManagerState() {
   writeJson(CUSTOM_COUPONS_KEY, defaultCoupons);
   writeJson(COUPON_STATE_KEY, defaultCouponState(defaultCoupons));
+  writeJson(SITE_COPY_KEY, defaultSiteCopy);
 }
 
 export function getRecords(): RedemptionRecord[] {
