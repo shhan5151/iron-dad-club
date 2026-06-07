@@ -1,0 +1,264 @@
+@import "tailwindcss";
+
+:root {
+  --iron: #0a0b10;
+  --iron-2: #111217;
+  --gold: #d8b35c;
+  --cream: #f3ead7;
+}
+
+@theme inline {
+  --color-iron: var(--iron);
+  --color-gold: var(--gold);
+  --color-cream: var(--cream);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--iron);
+}
+
+body {
+  min-height: 100dvh;
+  margin: 0;
+  color: var(--cream);
+  background:
+    radial-gradient(circle at 30% -10%, rgba(216, 179, 92, 0.16), transparent 32rem),
+    linear-gradient(180deg, #0a0b10 0%, #111217 54%, #08090d 100%);
+  font-family: Arial, Helvetica, sans-serif;
+  letter-spacing: 0;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.pass-grid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.24;
+  background-image:
+    linear-gradient(rgba(216, 179, 92, 0.18) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(216, 179, 92, 0.18) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: linear-gradient(to bottom, black, transparent 76%);
+}
+
+.premium-card {
+  position: relative;
+  border: 1px solid rgba(216, 179, 92, 0.28);
+  border-radius: 28px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.02)),
+    linear-gradient(160deg, rgba(216, 179, 92, 0.08), rgba(10, 11, 16, 0.65));
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.premium-card::after {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  pointer-events: none;
+  border: 1px solid rgba(216, 179, 92, 0.1);
+  border-radius: 22px;
+}
+
+.label-text {
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.19em;
+  color: rgba(216, 179, 92, 0.84);
+  text-transform: uppercase;
+}
+
+.bib-number {
+  display: grid;
+  min-width: 58px;
+  height: 48px;
+  place-items: center;
+  border: 1px solid rgba(216, 179, 92, 0.35);
+  border-radius: 12px;
+  color: var(--gold);
+  background: rgba(0, 0, 0, 0.28);
+  font-size: 1.05rem;
+  font-weight: 950;
+}
+
+.status-pill,
+.race-chip {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(216, 179, 92, 0.26);
+  border-radius: 999px;
+  background: rgba(216, 179, 92, 0.1);
+  color: var(--gold);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+
+.status-pill {
+  padding: 0.5rem 0.7rem;
+}
+
+.race-chip {
+  padding: 0.32rem 0.55rem;
+}
+
+.primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  border: 1px solid rgba(255, 231, 168, 0.4);
+  border-radius: 16px;
+  background: linear-gradient(135deg, #e7c76c, #9d7430);
+  color: #12100b;
+  font-weight: 950;
+  box-shadow: 0 16px 36px rgba(216, 179, 92, 0.22);
+}
+
+.ghost-button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.055);
+  padding: 0 0.85rem;
+  color: rgba(243, 234, 215, 0.78);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.metric-box {
+  min-height: 74px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.85rem 0.6rem;
+}
+
+.metric-box span {
+  display: block;
+  color: white;
+  font-size: 1.35rem;
+  font-weight: 950;
+}
+
+.metric-box p {
+  margin-top: 0.2rem;
+  color: rgba(243, 234, 215, 0.48);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.coupon-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 22px;
+  background:
+    linear-gradient(90deg, rgba(216, 179, 92, 0.08), transparent 45%),
+    rgba(255, 255, 255, 0.045);
+  padding: 1rem;
+  text-decoration: none;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.coupon-row:active {
+  transform: scale(0.985);
+}
+
+.remaining-badge {
+  display: grid;
+  width: 64px;
+  height: 64px;
+  place-items: center;
+  border: 1px solid rgba(216, 179, 92, 0.32);
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.24);
+}
+
+.remaining-badge.large {
+  width: 76px;
+  height: 76px;
+}
+
+.remaining-badge span {
+  color: white;
+  font-size: 1.35rem;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.remaining-badge p {
+  margin-top: -0.35rem;
+  color: rgba(216, 179, 92, 0.82);
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.rule-item {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.8rem 0.9rem;
+  color: rgba(243, 234, 215, 0.82);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.rule-item.muted {
+  color: rgba(243, 234, 215, 0.68);
+}
+
+.info-strip {
+  display: grid;
+  gap: 0.3rem;
+  border-left: 3px solid rgba(216, 179, 92, 0.7);
+  border-radius: 14px;
+  background: rgba(216, 179, 92, 0.08);
+  padding: 0.9rem 1rem;
+}
+
+.info-strip span {
+  color: rgba(216, 179, 92, 0.82);
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+}
+
+.info-strip strong {
+  color: rgba(243, 234, 215, 0.88);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.record-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.045);
+  padding: 1rem;
+}
+
+.record-row span {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: rgba(216, 179, 92, 0.12);
+  padding: 0.42rem 0.62rem;
+  color: var(--gold);
+  font-size: 0.72rem;
+  font-weight: 950;
+}

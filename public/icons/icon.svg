@@ -1,0 +1,10 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="112" fill="#0A0B10"/>
+  <rect x="46" y="46" width="420" height="420" rx="84" stroke="#D8B35C" stroke-width="10"/>
+  <path d="M118 170H394" stroke="#D8B35C" stroke-width="16" stroke-linecap="round"/>
+  <path d="M118 342H394" stroke="#D8B35C" stroke-width="16" stroke-linecap="round"/>
+  <path d="M154 256C154 199.667 199.667 154 256 154C312.333 154 358 199.667 358 256C358 312.333 312.333 358 256 358C199.667 358 154 312.333 154 256Z" stroke="#F3EAD7" stroke-width="14"/>
+  <path d="M212 264L242 294L304 216" stroke="#D8B35C" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="256" y="118" fill="#F3EAD7" font-family="Arial, Helvetica, sans-serif" font-size="44" font-weight="900" text-anchor="middle">IRON</text>
+  <text x="256" y="420" fill="#F3EAD7" font-family="Arial, Helvetica, sans-serif" font-size="40" font-weight="900" text-anchor="middle">DAD 40</text>
+</svg>
