@@ -33,7 +33,8 @@ body {
 }
 
 button,
-input {
+input,
+textarea {
   font: inherit;
 }
 
@@ -260,5 +261,61 @@ input {
   padding: 0.42rem 0.62rem;
   color: var(--gold);
   font-size: 0.72rem;
+  font-weight: 950;
+}
+
+.field-label {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.field-label span,
+.small-number-field span {
+  color: rgba(216, 179, 92, 0.8);
+  font-size: 0.7rem;
+  font-weight: 950;
+  letter-spacing: 0.14em;
+}
+
+.field-label input,
+.field-label textarea,
+.small-number-field input {
+  width: 100%;
+  border: 1px solid rgba(216, 179, 92, 0.2);
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.26);
+  color: white;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.field-label input,
+.small-number-field input {
+  min-height: 44px;
+  padding: 0 0.85rem;
+}
+
+.field-label textarea {
+  resize: vertical;
+  padding: 0.8rem 0.85rem;
+  line-height: 1.65;
+}
+
+.field-label input:focus,
+.field-label textarea:focus,
+.small-number-field input:focus {
+  border-color: rgba(216, 179, 92, 0.75);
+  box-shadow: 0 0 0 4px rgba(216, 179, 92, 0.12);
+}
+
+.small-number-field {
+  display: grid;
+  width: 82px;
+  gap: 0.35rem;
+}
+
+.small-number-field input {
+  text-align: center;
+  font-size: 1.15rem;
   font-weight: 950;
 }
