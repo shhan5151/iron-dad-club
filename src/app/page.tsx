@@ -6,10 +6,10 @@ import Link from "next/link";
 import type { Coupon } from "@/lib/coupons";
 import { clearSession, getCoupons, getCouponState, isLoggedIn, login, type CouponState } from "@/lib/storage";
 import { RegisterServiceWorker } from "@/components/RegisterServiceWorker";
-import { davinBikeCoastPhoto } from "@/lib/photos/davinBikeCoast";
-import { memoryCollagePhoto } from "@/lib/photos/memoryCollage";
 
 const PASSWORD = "ELARA0612";
+const DAVIN_BIKE_COAST_PHOTO = "/photos/davin-bike-coast.jpg";
+const MEMORY_COLLAGE_PHOTO = "/photos/memory-collage.jpg";
 
 export default function HomePage() {
   const [ready, setReady] = useState(false);
@@ -62,7 +62,7 @@ export default function HomePage() {
         <section className="relative flex min-h-dvh flex-col justify-between px-5 py-7">
           <div className="absolute inset-0">
             <Image
-              src={davinBikeCoastPhoto}
+              src={DAVIN_BIKE_COAST_PHOTO}
               alt="Davin riding along the coast"
               fill
               priority
@@ -89,9 +89,7 @@ export default function HomePage() {
               <div className="my-5 h-px bg-gold/25" />
               <div className="space-y-3 text-sm leading-7 text-cream/78">
                 <p>有些時間屬於家庭，有些時間屬於夢想。</p>
-                <p>
-                  而這些 Token，是 Hannah 與 Elara 預留給你的自由額度。當你想騎車、比賽、放空，或只是想做回 Davin 時，請放心使用。
-                </p>
+                <p>而這些 Token，是 Hannah 與 Elara 預留給你的自由額度。當你想騎車、比賽、放空，或只是想做回 Davin 時，請放心使用。</p>
                 <p>因為成為爸爸，不代表要放棄自己 ❤️</p>
               </div>
 
@@ -144,7 +142,7 @@ export default function HomePage() {
           <div className="premium-card overflow-hidden p-5">
             <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-white/10">
               <Image
-                src={memoryCollagePhoto}
+                src={MEMORY_COLLAGE_PHOTO}
                 alt="Davin and Hannah memory collage"
                 fill
                 priority
@@ -156,9 +154,7 @@ export default function HomePage() {
                 <div>
                   <p className="label-text text-cream/80">2020-2026</p>
                   <h2 className="mt-2 text-2xl font-black text-white">Davin & Hannah</h2>
-                  <p className="mt-2 text-sm leading-6 text-cream/82">
-                    從第一次合照，到紐西蘭、求婚、第一個寶寶，這張 Pass 也是你們一起走到今天的紀念票。
-                  </p>
+                  <p className="mt-2 text-sm leading-6 text-cream/82">從第一次合照，到紐西蘭、求婚、第一個寶寶，這張 Pass 也是你們一起走到今天的紀念票。</p>
                 </div>
               </div>
             </div>
