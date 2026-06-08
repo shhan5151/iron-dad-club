@@ -126,7 +126,6 @@ async function fetchCloudSnapshot(): Promise<AppSnapshot | null> {
     {
       headers: {
         apikey: SUPABASE_ANON_KEY!,
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
       },
     },
   );
@@ -148,7 +147,6 @@ async function saveCloudSnapshot(snapshot: AppSnapshot) {
     method: "POST",
     headers: {
       apikey: SUPABASE_ANON_KEY!,
-      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
       "Content-Type": "application/json",
       Prefer: "resolution=merge-duplicates,return=minimal",
     },
