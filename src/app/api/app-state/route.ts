@@ -4,12 +4,12 @@ import type { AppSnapshot } from "@/lib/storage";
 const CLOUD_STATE_ID = "iron-dad-club";
 const CLOUD_TABLE = "app_state";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+const RAW_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY =
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 function isServerSyncConfigured() {
-  return Boolean(SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY);
+  return Boolean(RAW_SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY);
 }
 
 function createSupabaseHeaders(apiKey: string) {
@@ -17,6 +17,14 @@ function createSupabaseHeaders(apiKey: string) {
     apikey: apiKey,
     ...(apiKey.startsWith("eyJ") ? { Authorization: `Bearer ${apiKey}` } : {}),
   };
+}
+
+function normalizeSupabaseRestUrl(url?: string) {
+  if (!url) {
+    return "";
+  }
+
+  return url.replace(/\/+$/, "").replace(/\/rest\/v1$/i, "");
 }
 
 async function readResponseError(response: Response, fallback: string) {
@@ -34,7 +42,7 @@ export async function GET() {
   }
 
   const response = await fetch(
-    `${SUPABASE_URL}/rest/v1/${CLOUD_TABLE}?id=eq.${CLOUD_STATE_ID}&select=payload`,
+    `${normalizeSupabaseRestUrl(RAW_SUPABASE_URL)}/rest/v1/${CLOUD_TABLE}?id=eq.${CLOUD_STATE_ID}&select=payload`,
     {
       headers: createSupabaseHeaders(SUPABASE_SERVICE_ROLE_KEY!),
       cache: "no-store",
@@ -62,7 +70,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing snapshot payload" }, { status: 400 });
   }
 
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/${CLOUD_TABLE}?on_conflict=id`, {
+  const response = await fetch(`${normalizeSupabaseRestUrl(RAW_SUPABASE_URL)}/rest/v1/${CLOUD_TABLE}?on_conflict=id`, {
     method: "POST",
     headers: {
       ...createSupabaseHeaders(SUPABASE_SERVICE_ROLE_KEY!),
