@@ -218,7 +218,7 @@ export default function HomePage() {
                   alt="Hannah and Davin celebration"
                   fill
                   unoptimized
-                  className="object-cover object-center"
+                  className="object-cover object-[center_78%]"
                 />
                 <div className="absolute inset-x-0 bottom-0 h-20 bg-[linear-gradient(180deg,rgba(8,9,14,0)_0%,rgba(8,9,14,0.72)_100%)]" />
               </div>
