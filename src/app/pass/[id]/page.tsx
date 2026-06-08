@@ -26,6 +26,7 @@ export default function PassDetailPage() {
   const [confirming, setConfirming] = useState(false);
   const [success, setSuccess] = useState("");
   const [pendingBlocked, setPendingBlocked] = useState(false);
+  const [requesting, setRequesting] = useState(false);
 
   useEffect(() => {
     if (!isLoggedIn()) {
@@ -53,21 +54,29 @@ export default function PassDetailPage() {
     if (!coupon) {
       return;
     }
-    const result = await submitRedemptionRequestAsync(coupon);
-    const snapshot = await loadAppSnapshot();
-    if (!result.ok) {
-      setPendingBlocked(result.reason === "pending");
+    setRequesting(true);
+    setSuccess("");
+    try {
+      const result = await submitRedemptionRequestAsync(coupon);
+      const snapshot = await loadAppSnapshot();
+      if (!result.ok) {
+        setPendingBlocked(result.reason === "pending");
+        setCouponList(snapshot.coupons);
+        setState(snapshot.couponState);
+        setRecords(snapshot.records);
+        return;
+      }
       setCouponList(snapshot.coupons);
       setState(snapshot.couponState);
       setRecords(snapshot.records);
-      return;
+      setConfirming(false);
+      setPendingBlocked(true);
+      setSuccess("申請已送出，等待 Hannah 批准。");
+    } catch {
+      setSuccess("申請送出失敗，請確認網路或 Supabase 設定後再試一次。");
+    } finally {
+      setRequesting(false);
     }
-    setCouponList(snapshot.coupons);
-    setState(snapshot.couponState);
-    setRecords(snapshot.records);
-    setConfirming(false);
-    setPendingBlocked(true);
-    setSuccess("申請已送出，等待 Hannah 批准。");
   }
 
   if (!ready) {
@@ -221,8 +230,8 @@ export default function PassDetailPage() {
               <button className="ghost-button justify-center py-4" onClick={() => setConfirming(false)} type="button">
                 取消
               </button>
-              <button className="primary-button" onClick={handleRequest} type="button">
-                送出申請
+              <button className="primary-button disabled:opacity-40" disabled={requesting} onClick={handleRequest} type="button">
+                {requesting ? "送出中" : "送出申請"}
               </button>
             </div>
           </div>
