@@ -84,6 +84,7 @@ export default function ManagePage() {
   const [records, setRecords] = useState<RedemptionRecord[]>([]);
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   useEffect(() => {
     const authed = window.localStorage.getItem(ADMIN_SESSION_KEY) === "true";
@@ -101,7 +102,7 @@ export default function ManagePage() {
     }
 
     const refresh = () => {
-      void loadManagerData({ silent: true });
+      void loadManagerData({ silent: true, preserveEditor: hasUnsavedChanges });
     };
 
     const intervalId = window.setInterval(refresh, 8000);
@@ -111,21 +112,27 @@ export default function ManagePage() {
       window.clearInterval(intervalId);
       window.removeEventListener("focus", refresh);
     };
-  }, [adminAuthed]);
+  }, [adminAuthed, hasUnsavedChanges]);
 
-  async function loadManagerData(options?: { silent?: boolean }) {
+  async function loadManagerData(options?: { silent?: boolean; preserveEditor?: boolean }) {
     setRefreshing(true);
     try {
       const snapshot = await loadAppSnapshot();
-      setItems(snapshot.coupons.map((coupon) => toEditable(coupon, snapshot.couponState)));
+      if (!options?.preserveEditor) {
+        setItems(snapshot.coupons.map((coupon) => toEditable(coupon, snapshot.couponState)));
+        setSiteCopy(snapshot.siteCopy);
+        setHasUnsavedChanges(false);
+      }
       setRecords(snapshot.records);
-      setSiteCopy(snapshot.siteCopy);
     } catch {
       const coupons = getCoupons();
       const state = getCouponState(coupons);
-      setItems(coupons.map((coupon) => toEditable(coupon, state)));
+      if (!options?.preserveEditor) {
+        setItems(coupons.map((coupon) => toEditable(coupon, state)));
+        setSiteCopy(getSiteCopy());
+        setHasUnsavedChanges(false);
+      }
       setRecords(getRecords());
-      setSiteCopy(getSiteCopy());
       if (!options?.silent) {
         setMessage("目前讀取的是這台裝置上的資料，雲端同步稍後再試。");
       }
@@ -150,6 +157,7 @@ export default function ManagePage() {
   function updateItem(id: string, patch: Partial<EditableCoupon>) {
     setItems((current) => current.map((item) => (item.id === id ? { ...item, ...patch } : item)));
     setMessage("");
+    setHasUnsavedChanges(true);
   }
 
   function moveItem(id: string, direction: "up" | "down") {
@@ -167,6 +175,7 @@ export default function ManagePage() {
       return moveInArray(current, index, targetIndex);
     });
     setMessage("");
+    setHasUnsavedChanges(true);
   }
 
   function updateBeforeLogin(patch: Partial<SiteCopy["beforeLogin"]>) {
@@ -178,6 +187,7 @@ export default function ManagePage() {
       },
     }));
     setMessage("");
+    setHasUnsavedChanges(true);
   }
 
   function updateAfterLogin(patch: Partial<SiteCopy["afterLogin"]>) {
@@ -189,6 +199,7 @@ export default function ManagePage() {
       },
     }));
     setMessage("");
+    setHasUnsavedChanges(true);
   }
 
   async function saveChanges() {
@@ -204,6 +215,7 @@ export default function ManagePage() {
           ? "已儲存到共享資料。Davin 那邊重新整理後就會看到最新版。"
           : "已儲存在這台裝置上。",
       );
+      setHasUnsavedChanges(false);
     } catch (error) {
       const detail = error instanceof Error ? error.message : "Unknown error";
       setMessage(`儲存失敗：${detail}`);
@@ -218,6 +230,7 @@ export default function ManagePage() {
       await resetCouponManagerStateAsync();
       await loadManagerData();
       setMessage("已還原成目前程式的預設內容。");
+      setHasUnsavedChanges(false);
     } catch (error) {
       const detail = error instanceof Error ? error.message : "Unknown error";
       setMessage(`還原失敗：${detail}`);
@@ -321,7 +334,11 @@ export default function ManagePage() {
             <div>
               <h2 className="text-lg font-black text-white">待批准申請</h2>
               <p className="mt-1 text-xs font-semibold text-cream/45">
-                {refreshing ? "正在更新共享資料..." : "每 8 秒會自動更新一次"}
+                {refreshing
+                  ? "正在更新共享資料..."
+                  : hasUnsavedChanges
+                    ? "你正在編輯中，系統只更新申請清單，不會覆蓋文字"
+                    : "每 8 秒會自動更新一次"}
               </p>
             </div>
             <div className="flex items-center gap-2">
