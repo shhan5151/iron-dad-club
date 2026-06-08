@@ -211,18 +211,18 @@ export default function HomePage() {
               />
             </div>
 
-            <div className="relative mt-4 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-              <div className="absolute inset-0">
+            <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]">
+              <div className="relative aspect-[4/3] overflow-hidden border-b border-white/10 bg-black/20">
                 <Image
                   src={CARD_PHOTO}
                   alt="Hannah and Davin celebration"
                   fill
                   unoptimized
-                  className="object-cover object-center opacity-35"
+                  className="object-cover object-center"
                 />
-                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,9,14,0.4)_0%,rgba(8,9,14,0.72)_36%,rgba(8,9,14,0.9)_100%)]" />
+                <div className="absolute inset-x-0 bottom-0 h-20 bg-[linear-gradient(180deg,rgba(8,9,14,0)_0%,rgba(8,9,14,0.72)_100%)]" />
               </div>
-              <div className="relative z-10">
+              <div className="p-4">
                 <p className="label-text text-cream/70">{siteCopy.afterLogin.memoryEyebrow}</p>
                 <h2 className="mt-2 text-2xl font-black text-white">{siteCopy.afterLogin.memoryTitle}</h2>
                 <div className="mt-4 space-y-4">{renderCardParagraphs(siteCopy.afterLogin.memoryDescription)}</div>
