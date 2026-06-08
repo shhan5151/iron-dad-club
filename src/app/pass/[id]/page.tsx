@@ -5,12 +5,12 @@ import Link from "next/link";
 import { notFound, useParams, useRouter } from "next/navigation";
 import type { Coupon } from "@/lib/coupons";
 import {
-  hasPendingRequest,
-  getCoupons,
   getCouponState,
+  getCoupons,
   getRecords,
   isLoggedIn,
-  submitRedemptionRequest,
+  loadAppSnapshot,
+  submitRedemptionRequestAsync,
   type CouponState,
   type RedemptionRecord,
 } from "@/lib/storage";
@@ -32,24 +32,39 @@ export default function PassDetailPage() {
       router.replace("/");
       return;
     }
-    const savedCoupons = getCoupons();
-    setCouponList(savedCoupons);
-    setState(getCouponState(savedCoupons));
-    setRecords(getRecords());
-    setReady(true);
+    async function load() {
+      const snapshot = await loadAppSnapshot();
+      setCouponList(snapshot.coupons);
+      setState(snapshot.couponState);
+      setRecords(snapshot.records);
+      setReady(true);
+    }
+
+    load().catch(() => {
+      const savedCoupons = getCoupons();
+      setCouponList(savedCoupons);
+      setState(getCouponState(savedCoupons));
+      setRecords(getRecords());
+      setReady(true);
+    });
   }, [router]);
 
-  function handleRequest() {
+  async function handleRequest() {
     if (!coupon) {
       return;
     }
-    const result = submitRedemptionRequest(coupon);
+    const result = await submitRedemptionRequestAsync(coupon);
+    const snapshot = await loadAppSnapshot();
     if (!result.ok) {
       setPendingBlocked(result.reason === "pending");
-      setRecords(getRecords());
+      setCouponList(snapshot.coupons);
+      setState(snapshot.couponState);
+      setRecords(snapshot.records);
       return;
     }
-    setRecords(getRecords());
+    setCouponList(snapshot.coupons);
+    setState(snapshot.couponState);
+    setRecords(snapshot.records);
     setConfirming(false);
     setPendingBlocked(true);
     setSuccess("申請已送出，等待 Hannah 批准。");
@@ -65,14 +80,14 @@ export default function PassDetailPage() {
 
   const remaining = state[coupon.id] ?? coupon.initialUses;
   const relatedRecords = records.filter((record) => record.couponId === coupon.id);
-  const isPending = pendingBlocked || hasPendingRequest(coupon.id);
+  const isPending = pendingBlocked || records.some((record) => record.couponId === coupon.id && record.status === "待批准");
 
   return (
     <main className="min-h-dvh bg-iron text-cream">
       <section className="mx-auto min-h-dvh max-w-md px-4 pb-24 pt-5">
         <nav className="mb-5 flex items-center justify-between">
           <Link className="ghost-button" href="/">
-            返回
+            回到券包
           </Link>
           <Link className="text-sm font-bold text-gold underline-offset-4 hover:underline" href="/records">
             兌換紀錄
@@ -140,7 +155,7 @@ export default function PassDetailPage() {
           <div className="mt-5 grid gap-3">
             {coupon.validity ? (
               <div className="info-strip">
-                <span>使用期限</span>
+                <span>有效期限</span>
                 <strong>{coupon.validity}</strong>
               </div>
             ) : null}
@@ -152,7 +167,11 @@ export default function PassDetailPage() {
             ) : null}
           </div>
 
-          {success ? <p className="mt-5 rounded-xl border border-gold/30 bg-gold/10 p-4 text-sm font-bold leading-6 text-gold">{success}</p> : null}
+          {success ? (
+            <p className="mt-5 rounded-xl border border-gold/30 bg-gold/10 p-4 text-sm font-bold leading-6 text-gold">
+              {success}
+            </p>
+          ) : null}
 
           <button
             className="primary-button mt-6 w-full disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/10 disabled:text-cream/35"
@@ -165,7 +184,7 @@ export default function PassDetailPage() {
         </article>
 
         <section className="mt-6">
-          <h2 className="text-lg font-black text-white">此券紀錄</h2>
+          <h2 className="text-lg font-black text-white">申請紀錄</h2>
           <div className="mt-3 space-y-3">
             {relatedRecords.length ? (
               relatedRecords.map((record) => (
@@ -173,7 +192,9 @@ export default function PassDetailPage() {
                   <div>
                     <p className="font-bold text-white">{record.couponTitle}</p>
                     <p className="mt-1 text-xs text-cream/48">
-                      {record.status === "待批准" ? `申請時間 ${record.requestedAt}` : `處理時間 ${record.resolvedAt ?? record.requestedAt}`}
+                      {record.status === "待批准"
+                        ? `申請時間 ${record.requestedAt}`
+                        : `處理時間 ${record.resolvedAt ?? record.requestedAt}`}
                     </p>
                   </div>
                   <span>{record.status}</span>
@@ -181,7 +202,7 @@ export default function PassDetailPage() {
               ))
             ) : (
               <p className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-cream/55">
-                目前尚未啟動任何自由模式。
+                目前還沒有這張券的申請紀錄。
               </p>
             )}
           </div>
@@ -192,9 +213,9 @@ export default function PassDetailPage() {
         <div className="fixed inset-0 z-50 grid place-items-end bg-black/70 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-3xl border border-gold/25 bg-[#111217] p-5 shadow-2xl">
             <p className="label-text">REQUEST CONTROL</p>
-            <h2 className="mt-3 text-2xl font-black text-white">要送出申請給 Hannah 嗎？</h2>
+            <h2 className="mt-3 text-2xl font-black text-white">送出給 Hannah 審核？</h2>
             <p className="mt-3 text-sm leading-6 text-cream/65">
-              送出後不會立刻扣次數，會等 Hannah 在管理頁決定是否批准。
+              這次只會送出申請，不會立即扣券。要等 Hannah 在管理後台批准後，才會正式啟動。
             </p>
             <div className="mt-6 grid grid-cols-2 gap-3">
               <button className="ghost-button justify-center py-4" onClick={() => setConfirming(false)} type="button">
