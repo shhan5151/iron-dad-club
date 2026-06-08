@@ -1,4 +1,4 @@
-const CACHE_NAME = "iron-dad-club-v3";
+const CACHE_NAME = "iron-dad-club-v4";
 const APP_SHELL = [
   "/manifest.webmanifest",
   "/icons/icon.svg",
@@ -31,9 +31,34 @@ self.addEventListener("fetch", (event) => {
   const isNavigationRequest =
     event.request.mode === "navigate" || event.request.headers.get("accept")?.includes("text/html");
   const isApiRequest = isSameOrigin && requestUrl.pathname.startsWith("/api/");
+  const isDynamicAsset =
+    isSameOrigin &&
+    (requestUrl.pathname.startsWith("/_next/") ||
+      requestUrl.pathname.startsWith("/photos/") ||
+      requestUrl.pathname === "/" ||
+      requestUrl.pathname === "/manage");
 
   if (isApiRequest) {
     event.respondWith(fetch(event.request));
+    return;
+  }
+
+  if (isDynamicAsset) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return response;
+        })
+        .catch(async () => {
+          const cached = await caches.match(event.request);
+          if (cached) {
+            return cached;
+          }
+          return caches.match("/");
+        }),
+    );
     return;
   }
 
