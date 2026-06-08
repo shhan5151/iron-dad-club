@@ -161,14 +161,14 @@ export default function HomePage() {
           </div>
 
           <div className="premium-card overflow-hidden p-5">
-            <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-white/10">
+            <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-white/10 bg-[#050608] p-2">
               <Image
                 src={MEMORY_COLLAGE_PHOTO}
                 alt="Davin and Hannah memory collage"
                 fill
                 priority
                 unoptimized
-                className="object-cover object-top"
+                className="object-contain"
               />
             </div>
 
