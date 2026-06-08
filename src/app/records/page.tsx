@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getRecords, isLoggedIn, type RedemptionRecord } from "@/lib/storage";
+import { getRecords, isLoggedIn, loadAppSnapshot, type RedemptionRecord } from "@/lib/storage";
 
 export default function RecordsPage() {
   const router = useRouter();
@@ -15,8 +15,16 @@ export default function RecordsPage() {
       router.replace("/");
       return;
     }
-    setRecords(getRecords());
-    setReady(true);
+    async function load() {
+      const snapshot = await loadAppSnapshot();
+      setRecords(snapshot.records);
+      setReady(true);
+    }
+
+    load().catch(() => {
+      setRecords(getRecords());
+      setReady(true);
+    });
   }, [router]);
 
   if (!ready) {
@@ -28,7 +36,7 @@ export default function RecordsPage() {
       <section className="mx-auto min-h-dvh max-w-md px-4 pb-24 pt-5">
         <nav className="mb-5 flex items-center justify-between">
           <Link className="ghost-button" href="/">
-            返回券包
+            回到券包
           </Link>
           <p className="label-text">REQUEST LOG</p>
         </nav>
@@ -37,7 +45,7 @@ export default function RecordsPage() {
           <p className="label-text">IRON DAD CLUB</p>
           <h1 className="mt-3 text-3xl font-black text-white">兌換紀錄</h1>
           <p className="mt-3 text-sm leading-7 text-cream/70">
-            這裡會顯示 Davin 送出的申請，以及 Hannah 的審核結果。
+            這裡會顯示 Davin 送出的自由模式申請，以及 Hannah 的批准結果。
           </p>
         </header>
 
