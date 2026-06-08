@@ -1,4 +1,4 @@
-const CACHE_NAME = "iron-dad-club-v2";
+const CACHE_NAME = "iron-dad-club-v3";
 const APP_SHELL = [
   "/manifest.webmanifest",
   "/icons/icon.svg",
@@ -30,6 +30,12 @@ self.addEventListener("fetch", (event) => {
   const isSameOrigin = requestUrl.origin === self.location.origin;
   const isNavigationRequest =
     event.request.mode === "navigate" || event.request.headers.get("accept")?.includes("text/html");
+  const isApiRequest = isSameOrigin && requestUrl.pathname.startsWith("/api/");
+
+  if (isApiRequest) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
 
   if (isNavigationRequest) {
     event.respondWith(
