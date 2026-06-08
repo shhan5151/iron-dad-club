@@ -135,7 +135,9 @@ async function fetchCloudSnapshot(): Promise<AppSnapshot | null> {
     {
       headers: {
         apikey: SUPABASE_ANON_KEY!,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY!}`,
       },
+      cache: "no-store",
     },
   );
 
@@ -152,10 +154,11 @@ async function saveCloudSnapshot(snapshot: AppSnapshot) {
     return;
   }
 
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/${CLOUD_TABLE}`, {
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/${CLOUD_TABLE}?on_conflict=id`, {
     method: "POST",
     headers: {
       apikey: SUPABASE_ANON_KEY!,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY!}`,
       "Content-Type": "application/json",
       Prefer: "resolution=merge-duplicates,return=minimal",
     },
