@@ -19,9 +19,9 @@ import { RegisterServiceWorker } from "@/components/RegisterServiceWorker";
 
 const PASSWORD = "ELARA0612";
 const DAVIN_BIKE_COAST_PHOTO = "/photos/davin-bike-coast.jpg";
-const DAVIN_PROFILE_PHOTO = "/photos/davin-race-portrait.jpg";
+const DAVIN_PROFILE_PHOTO = "/photos/davin-profile.jpg";
 const MEMORY_COLLAGE_PHOTO = "/photos/memory-collage.png";
-const CARD_PHOTO = "/photos/birthday-dinner.jpg";
+const CARD_PHOTO = "/photos/card-photo.jpg";
 const ELARA_ULTRASOUND_PHOTO = "/photos/elara-ultrasound.jpg";
 
 function renderParagraphs(text: string) {
