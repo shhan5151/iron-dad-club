@@ -5,14 +5,16 @@ import Link from "next/link";
 import type { SiteCopy } from "@/lib/copy";
 import type { Coupon } from "@/lib/coupons";
 import {
-  approveRedemptionRequest,
+  approveRedemptionRequestAsync,
   getCouponState,
   getCoupons,
   getRecords,
   getSiteCopy,
-  rejectRedemptionRequest,
-  resetCouponManagerState,
-  saveCouponManagerState,
+  isCloudSyncConfigured,
+  loadAppSnapshot,
+  rejectRedemptionRequestAsync,
+  resetCouponManagerStateAsync,
+  saveCouponManagerStateAsync,
   type CouponState,
   type RedemptionRecord,
 } from "@/lib/storage";
@@ -80,27 +82,32 @@ export default function ManagePage() {
   const [siteCopy, setSiteCopy] = useState<SiteCopy>(getSiteCopy());
   const [message, setMessage] = useState("");
   const [records, setRecords] = useState<RedemptionRecord[]>([]);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const authed = window.localStorage.getItem(ADMIN_SESSION_KEY) === "true";
     setAdminAuthed(authed);
 
     if (authed) {
+      loadManagerData();
+    }
+    setReady(true);
+  }, []);
+
+  async function loadManagerData() {
+    try {
+      const snapshot = await loadAppSnapshot();
+      setItems(snapshot.coupons.map((coupon) => toEditable(coupon, snapshot.couponState)));
+      setRecords(snapshot.records);
+      setSiteCopy(snapshot.siteCopy);
+    } catch {
       const coupons = getCoupons();
       const state = getCouponState(coupons);
       setItems(coupons.map((coupon) => toEditable(coupon, state)));
       setRecords(getRecords());
       setSiteCopy(getSiteCopy());
+      setMessage("雲端同步暫時讀取失敗，現在顯示本機資料。");
     }
-    setReady(true);
-  }, []);
-
-  function loadManagerData() {
-    const coupons = getCoupons();
-    const state = getCouponState(coupons);
-    setItems(coupons.map((coupon) => toEditable(coupon, state)));
-    setRecords(getRecords());
-    setSiteCopy(getSiteCopy());
   }
 
   function handleAdminLogin(event: React.FormEvent<HTMLFormElement>) {
@@ -111,7 +118,7 @@ export default function ManagePage() {
     }
 
     window.localStorage.setItem(ADMIN_SESSION_KEY, "true");
-    loadManagerData();
+    void loadManagerData();
     setAdminAuthed(true);
     setError("");
   }
@@ -158,37 +165,55 @@ export default function ManagePage() {
     setMessage("");
   }
 
-  function saveChanges() {
+  async function saveChanges() {
+    setSaving(true);
     const nextCoupons = items.map(toCoupon);
     const nextState = Object.fromEntries(items.map((item) => [item.id, Math.max(0, Number(item.remaining) || 0)]));
 
-    saveCouponManagerState(nextCoupons, nextState, siteCopy);
-    setItems(nextCoupons.map((coupon) => toEditable(coupon, nextState)));
-    setMessage("已儲存。前台文案與票券順序都更新了。");
+    try {
+      await saveCouponManagerStateAsync(nextCoupons, nextState, siteCopy);
+      setItems(nextCoupons.map((coupon) => toEditable(coupon, nextState)));
+      setMessage(
+        isCloudSyncConfigured() ? "已儲存到雲端。Davin 的手機重新整理後會同步更新。" : "已儲存在這台裝置。",
+      );
+    } catch {
+      setMessage("儲存失敗，請檢查 Supabase 設定或網路狀態。");
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function resetDefaults() {
-    resetCouponManagerState();
-    loadManagerData();
-    setMessage("已還原成預設內容與順序。");
+  async function resetDefaults() {
+    setSaving(true);
+    try {
+      await resetCouponManagerStateAsync();
+      await loadManagerData();
+      setMessage("已還原成預設內容與順序。");
+    } catch {
+      setMessage("還原失敗，請檢查 Supabase 設定或網路狀態。");
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function approveRequest(requestId: string) {
-    const result = approveRedemptionRequest(requestId);
+  async function approveRequest(requestId: string) {
+    setSaving(true);
+    const result = await approveRedemptionRequestAsync(requestId);
     if (!result.ok) {
       setMessage("批准失敗，可能是該票券次數已用完或資料不同步。");
+      setSaving(false);
       return;
     }
-    const coupons = getCoupons();
-    const state = getCouponState(coupons);
-    setItems(coupons.map((coupon) => toEditable(coupon, state)));
-    setRecords(getRecords());
+    await loadManagerData();
+    setSaving(false);
     setMessage("已批准申請，票券次數也同步扣除了。");
   }
 
-  function rejectRequest(requestId: string) {
-    rejectRedemptionRequest(requestId);
-    setRecords(getRecords());
+  async function rejectRequest(requestId: string) {
+    setSaving(true);
+    await rejectRedemptionRequestAsync(requestId);
+    await loadManagerData();
+    setSaving(false);
     setMessage("已婉拒這次申請。");
   }
 
@@ -274,10 +299,15 @@ export default function ManagePage() {
                   <h3 className="mt-2 text-xl font-black text-white">{record.couponTitle}</h3>
                   <p className="mt-2 text-sm text-cream/65">申請時間：{record.requestedAt}</p>
                   <div className="mt-5 grid grid-cols-2 gap-3">
-                    <button className="ghost-button justify-center py-4" onClick={() => rejectRequest(record.id)} type="button">
+                    <button
+                      className="ghost-button justify-center py-4 disabled:opacity-40"
+                      disabled={saving}
+                      onClick={() => rejectRequest(record.id)}
+                      type="button"
+                    >
                       婉拒
                     </button>
-                    <button className="primary-button" onClick={() => approveRequest(record.id)} type="button">
+                    <button className="primary-button disabled:opacity-40" disabled={saving} onClick={() => approveRequest(record.id)} type="button">
                       批准
                     </button>
                   </div>
@@ -485,11 +515,11 @@ export default function ManagePage() {
 
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#0a0b10]/92 p-4 backdrop-blur">
           <div className="mx-auto grid max-w-md grid-cols-2 gap-3">
-            <button className="ghost-button justify-center py-4" onClick={resetDefaults} type="button">
+            <button className="ghost-button justify-center py-4 disabled:opacity-40" disabled={saving} onClick={resetDefaults} type="button">
               還原預設
             </button>
-            <button className="primary-button" onClick={saveChanges} type="button">
-              儲存變更
+            <button className="primary-button disabled:opacity-40" disabled={saving} onClick={saveChanges} type="button">
+              {saving ? "儲存中" : "儲存變更"}
             </button>
           </div>
         </div>
