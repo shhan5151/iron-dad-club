@@ -83,6 +83,7 @@ export default function ManagePage() {
   const [message, setMessage] = useState("");
   const [records, setRecords] = useState<RedemptionRecord[]>([]);
   const [saving, setSaving] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     const authed = window.localStorage.getItem(ADMIN_SESSION_KEY) === "true";
@@ -94,7 +95,25 @@ export default function ManagePage() {
     setReady(true);
   }, []);
 
-  async function loadManagerData() {
+  useEffect(() => {
+    if (!adminAuthed) {
+      return;
+    }
+
+    const refresh = () => {
+      void loadManagerData({ silent: true });
+    };
+    const intervalId = window.setInterval(refresh, 8000);
+    window.addEventListener("focus", refresh);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [adminAuthed]);
+
+  async function loadManagerData(options?: { silent?: boolean }) {
+    setRefreshing(true);
     try {
       const snapshot = await loadAppSnapshot();
       setItems(snapshot.coupons.map((coupon) => toEditable(coupon, snapshot.couponState)));
@@ -106,7 +125,11 @@ export default function ManagePage() {
       setItems(coupons.map((coupon) => toEditable(coupon, state)));
       setRecords(getRecords());
       setSiteCopy(getSiteCopy());
-      setMessage("雲端同步暫時讀取失敗，現在顯示本機資料。");
+      if (!options?.silent) {
+        setMessage("雲端同步暫時讀取失敗，現在顯示本機資料。");
+      }
+    } finally {
+      setRefreshing(false);
     }
   }
 
@@ -287,8 +310,18 @@ export default function ManagePage() {
 
         <section className="mt-5">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-black text-white">待批准申請</h2>
-            <span className="text-sm font-bold text-gold">{pendingRequests.length} 筆</span>
+            <div>
+              <h2 className="text-lg font-black text-white">待批准申請</h2>
+              <p className="mt-1 text-xs font-semibold text-cream/45">
+                {refreshing ? "正在更新申請列表" : "每 8 秒自動更新一次"}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button className="ghost-button px-3 py-2 text-xs" onClick={() => loadManagerData()} type="button">
+                重新整理
+              </button>
+              <span className="text-sm font-bold text-gold">{pendingRequests.length} 筆</span>
+            </div>
           </div>
 
           <div className="space-y-3">
