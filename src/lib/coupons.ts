@@ -18,9 +18,9 @@ export const defaultCoupons: Coupon[] = [
     code: "TRI-001",
     category: "ENDURANCE PASS",
     title: "無條件三鐵券",
-    effect: "爸爸想報名時，可啟動一次耐力賽專用批准權。",
+    effect: "可兌換三鐵賽事、單車賽或馬拉松賽事一次。",
     redeemableFor: ["三鐵賽事一次", "單車賽一次", "馬拉松賽事一次"],
-    rules: ["媽媽不得說：「你確定？」", "媽媽不得說：「現在？」", "媽媽不得說：「不是才剛比完？」"],
+    rules: ["當爸爸想報名時，媽媽不得說「你確定？」", "不得說「現在？」", "不得說「不是才剛比完？」"],
     initialUses: 1,
   },
   {
@@ -65,8 +65,9 @@ export const defaultCoupons: Coupon[] = [
     code: "CALM-003",
     category: "MENTAL RESET",
     title: "情緒豁免券",
-    effect: "當爸爸覺得累、壓力大、想放空時，可直接啟動。",
-    rules: ["不需解釋原因。"],
+    effect: "當爸爸覺得累、壓力大、想放空時，可直接啟動，獲得一段不被打擾的恢復時間。",
+    usableFor: ["2 小時不被打擾時間", "當次非必要育兒與家務暫停", "睡覺", "滑手機", "出門走走", "安靜待著"],
+    rules: ["不需解釋原因。", "可自由選擇休息方式。"],
     initialUses: 3,
   },
   {
