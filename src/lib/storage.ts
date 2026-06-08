@@ -112,6 +112,15 @@ function mergeSnapshot(partial?: Partial<AppSnapshot>): AppSnapshot {
   };
 }
 
+async function readResponseError(response: Response, fallback: string) {
+  const responseText = (await response.text()).trim();
+  if (!responseText) {
+    return `${fallback} (${response.status})`;
+  }
+
+  return `${fallback} (${response.status}): ${responseText}`;
+}
+
 export function isCloudSyncConfigured() {
   return Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 }
@@ -131,7 +140,7 @@ async function fetchCloudSnapshot(): Promise<AppSnapshot | null> {
   );
 
   if (!response.ok) {
-    throw new Error("Cloud state could not be loaded.");
+    throw new Error(await readResponseError(response, "Cloud state could not be loaded"));
   }
 
   const rows = (await response.json()) as Array<{ payload?: Partial<AppSnapshot> }>;
@@ -158,7 +167,7 @@ async function saveCloudSnapshot(snapshot: AppSnapshot) {
   });
 
   if (!response.ok) {
-    throw new Error("Cloud state could not be saved.");
+    throw new Error(await readResponseError(response, "Cloud state could not be saved"));
   }
 }
 
