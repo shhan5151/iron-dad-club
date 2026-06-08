@@ -19,7 +19,10 @@ import { RegisterServiceWorker } from "@/components/RegisterServiceWorker";
 
 const PASSWORD = "ELARA0612";
 const DAVIN_BIKE_COAST_PHOTO = "/photos/davin-bike-coast.jpg";
+const DAVIN_PROFILE_PHOTO = "/photos/davin-race-portrait.jpg";
 const MEMORY_COLLAGE_PHOTO = "/photos/memory-collage.png";
+const CARD_PHOTO = "/photos/birthday-dinner.jpg";
+const ELARA_ULTRASOUND_PHOTO = "/photos/elara-ultrasound.jpg";
 
 function renderParagraphs(text: string) {
   return text
@@ -29,6 +32,18 @@ function renderParagraphs(text: string) {
     .map((line) => (
       <p key={line} className="text-sm leading-7 text-cream/78">
         {line}
+      </p>
+    ));
+}
+
+function renderCardParagraphs(text: string) {
+  return text
+    .split("\n\n")
+    .map((block) => block.trim())
+    .filter(Boolean)
+    .map((block) => (
+      <p key={block} className="text-sm leading-8 text-cream/78 whitespace-pre-line">
+        {block}
       </p>
     ));
 }
@@ -119,9 +134,21 @@ export default function HomePage() {
             </div>
 
             <div className="premium-card p-5">
-              <div>
-                <p className="label-text">{siteCopy.beforeLogin.subtitle}</p>
-                <h2 className="mt-3 text-2xl font-extrabold text-white">{siteCopy.beforeLogin.cardTitle}</h2>
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="label-text">{siteCopy.beforeLogin.subtitle}</p>
+                  <h2 className="mt-3 text-2xl font-extrabold text-white">{siteCopy.beforeLogin.cardTitle}</h2>
+                </div>
+                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-gold/30 bg-black/30 shadow-[0_12px_30px_rgba(0,0,0,0.28)]">
+                  <Image
+                    src={DAVIN_PROFILE_PHOTO}
+                    alt="Davin portrait"
+                    fill
+                    priority
+                    unoptimized
+                    className="object-cover"
+                  />
+                </div>
               </div>
               <div className="my-5 h-px bg-gold/25" />
               <div className="space-y-3">{renderParagraphs(siteCopy.beforeLogin.description)}</div>
@@ -185,9 +212,41 @@ export default function HomePage() {
             </div>
 
             <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-              <p className="label-text text-cream/70">{siteCopy.afterLogin.memoryEyebrow}</p>
-              <h2 className="mt-2 text-2xl font-black text-white">{siteCopy.afterLogin.memoryTitle}</h2>
-              <p className="mt-3 text-sm leading-7 text-cream/75">{siteCopy.afterLogin.memoryDescription}</p>
+              <div className="flex items-start gap-4">
+                <div className="min-w-0 flex-1">
+                  <p className="label-text text-cream/70">{siteCopy.afterLogin.memoryEyebrow}</p>
+                  <h2 className="mt-2 text-2xl font-black text-white">{siteCopy.afterLogin.memoryTitle}</h2>
+                </div>
+                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-gold/20 bg-black/20">
+                  <Image
+                    src={CARD_PHOTO}
+                    alt="Hannah and Davin celebration"
+                    fill
+                    unoptimized
+                    className="object-cover"
+                  />
+                </div>
+              </div>
+              <div className="mt-4 space-y-4">{renderCardParagraphs(siteCopy.afterLogin.memoryDescription)}</div>
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+              <div className="grid gap-4 sm:grid-cols-[0.95fr_1.05fr] sm:items-center">
+                <div className="relative aspect-[5/4] overflow-hidden rounded-2xl border border-white/10 bg-black/25">
+                  <Image
+                    src={ELARA_ULTRASOUND_PHOTO}
+                    alt="Elara ultrasound"
+                    fill
+                    unoptimized
+                    className="object-cover"
+                  />
+                </div>
+                <div>
+                  <p className="label-text text-cream/70">{siteCopy.afterLogin.ultrasoundEyebrow}</p>
+                  <h2 className="mt-2 text-2xl font-black text-white">{siteCopy.afterLogin.ultrasoundTitle}</h2>
+                  <p className="mt-3 text-sm leading-7 text-cream/75">{siteCopy.afterLogin.ultrasoundDescription}</p>
+                </div>
+              </div>
             </div>
 
             <div className="mt-5 grid grid-cols-3 gap-3">
