@@ -14,6 +14,12 @@ const SERVER_SYNC_ENDPOINT = "/api/app-state";
 const RAW_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+const LEGACY_AFTER_LOGIN_COPY = {
+  memoryEyebrow: "2020-2026",
+  memoryTitle: "Davin & Hannah",
+  memoryDescription: "從第一次合照，到紐西蘭、求婚、第一個寶寶，這張 Pass 也是你們一起走到今天的紀念票。",
+};
+
 export type CouponState = Record<string, number>;
 export type RedemptionStatus = "待批准" | "已批准" | "已婉拒";
 
@@ -115,7 +121,7 @@ function writeJson<T>(key: string, value: T) {
 }
 
 function mergeSiteCopy(partial?: Partial<SiteCopy>): SiteCopy {
-  return {
+  const merged = {
     beforeLogin: {
       ...defaultSiteCopy.beforeLogin,
       ...partial?.beforeLogin,
@@ -125,6 +131,23 @@ function mergeSiteCopy(partial?: Partial<SiteCopy>): SiteCopy {
       ...partial?.afterLogin,
     },
   };
+
+  const isLegacyAfterLoginCopy =
+    merged.afterLogin.memoryEyebrow === LEGACY_AFTER_LOGIN_COPY.memoryEyebrow &&
+    merged.afterLogin.memoryTitle === LEGACY_AFTER_LOGIN_COPY.memoryTitle &&
+    merged.afterLogin.memoryDescription === LEGACY_AFTER_LOGIN_COPY.memoryDescription;
+
+  if (isLegacyAfterLoginCopy) {
+    merged.afterLogin = {
+      ...defaultSiteCopy.afterLogin,
+      ...partial?.afterLogin,
+      memoryEyebrow: defaultSiteCopy.afterLogin.memoryEyebrow,
+      memoryTitle: defaultSiteCopy.afterLogin.memoryTitle,
+      memoryDescription: defaultSiteCopy.afterLogin.memoryDescription,
+    };
+  }
+
+  return merged;
 }
 
 function mergeSnapshot(partial?: Partial<AppSnapshot>): AppSnapshot {
@@ -351,6 +374,7 @@ export async function loadAppSnapshot(): Promise<AppSnapshot> {
     const remoteSnapshot = await fetchRemoteSnapshot();
     if (remoteSnapshot) {
       saveLocalSnapshot(remoteSnapshot);
+      void ensureRemoteSnapshot(remoteSnapshot).catch(() => undefined);
       return remoteSnapshot;
     }
 
