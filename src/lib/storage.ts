@@ -11,7 +11,7 @@ const CLOUD_STATE_ID = "iron-dad-club";
 const CLOUD_TABLE = "app_state";
 const SERVER_SYNC_ENDPOINT = "/api/app-state";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const RAW_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 export type CouponState = Record<string, number>;
@@ -180,8 +180,16 @@ function createSupabaseHeaders(apiKey: string) {
   };
 }
 
+function normalizeSupabaseRestUrl(url?: string) {
+  if (!url) {
+    return "";
+  }
+
+  return url.replace(/\/+$/, "").replace(/\/rest\/v1$/i, "");
+}
+
 export function isCloudSyncConfigured() {
-  return Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+  return Boolean(RAW_SUPABASE_URL && SUPABASE_ANON_KEY);
 }
 
 async function fetchServerSnapshot(): Promise<AppSnapshot | null> {
@@ -235,7 +243,7 @@ async function fetchDirectCloudSnapshot(): Promise<AppSnapshot | null> {
   }
 
   const response = await fetch(
-    `${SUPABASE_URL}/rest/v1/${CLOUD_TABLE}?id=eq.${CLOUD_STATE_ID}&select=payload`,
+    `${normalizeSupabaseRestUrl(RAW_SUPABASE_URL)}/rest/v1/${CLOUD_TABLE}?id=eq.${CLOUD_STATE_ID}&select=payload`,
     {
       headers: createSupabaseHeaders(SUPABASE_ANON_KEY!),
     },
@@ -254,7 +262,7 @@ async function saveDirectCloudSnapshot(snapshot: AppSnapshot): Promise<SaveResul
     return { synced: false };
   }
 
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/${CLOUD_TABLE}?on_conflict=id`, {
+  const response = await fetch(`${normalizeSupabaseRestUrl(RAW_SUPABASE_URL)}/rest/v1/${CLOUD_TABLE}?on_conflict=id`, {
     method: "POST",
     headers: {
       ...createSupabaseHeaders(SUPABASE_ANON_KEY!),
