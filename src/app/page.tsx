@@ -58,7 +58,7 @@ export default function HomePage() {
   const [siteCopy, setSiteCopy] = useState<SiteCopy>(getSiteCopy());
 
   useEffect(() => {
-    async function load() {
+    async function refreshHomeData() {
       const snapshot = await loadAppSnapshot();
       setAuthenticated(isLoggedIn());
       setCouponList(snapshot.coupons);
@@ -67,7 +67,7 @@ export default function HomePage() {
       setReady(true);
     }
 
-    load().catch(() => {
+    refreshHomeData().catch(() => {
       const savedCoupons = getCoupons();
       setAuthenticated(isLoggedIn());
       setCouponList(savedCoupons);
@@ -75,6 +75,18 @@ export default function HomePage() {
       setSiteCopy(getSiteCopy());
       setReady(true);
     });
+
+    const handleFocusRefresh = () => {
+      void refreshHomeData().catch(() => undefined);
+    };
+
+    window.addEventListener("focus", handleFocusRefresh);
+    document.addEventListener("visibilitychange", handleFocusRefresh);
+
+    return () => {
+      window.removeEventListener("focus", handleFocusRefresh);
+      document.removeEventListener("visibilitychange", handleFocusRefresh);
+    };
   }, []);
 
   const totalRemaining = useMemo(
