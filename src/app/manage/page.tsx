@@ -90,7 +90,7 @@ export default function ManagePage() {
     setAdminAuthed(authed);
 
     if (authed) {
-      loadManagerData();
+      void loadManagerData();
     }
     setReady(true);
   }, []);
@@ -103,6 +103,7 @@ export default function ManagePage() {
     const refresh = () => {
       void loadManagerData({ silent: true });
     };
+
     const intervalId = window.setInterval(refresh, 8000);
     window.addEventListener("focus", refresh);
 
@@ -126,7 +127,7 @@ export default function ManagePage() {
       setRecords(getRecords());
       setSiteCopy(getSiteCopy());
       if (!options?.silent) {
-        setMessage("雲端同步暫時讀取失敗，現在顯示本機資料。");
+        setMessage("目前讀取的是這台裝置上的資料，雲端同步稍後再試。");
       }
     } finally {
       setRefreshing(false);
@@ -157,10 +158,12 @@ export default function ManagePage() {
       if (index === -1) {
         return current;
       }
+
       const targetIndex = direction === "up" ? index - 1 : index + 1;
       if (targetIndex < 0 || targetIndex >= current.length) {
         return current;
       }
+
       return moveInArray(current, index, targetIndex);
     });
     setMessage("");
@@ -197,10 +200,13 @@ export default function ManagePage() {
       await saveCouponManagerStateAsync(nextCoupons, nextState, siteCopy);
       setItems(nextCoupons.map((coupon) => toEditable(coupon, nextState)));
       setMessage(
-        isCloudSyncConfigured() ? "已儲存到雲端。Davin 的手機重新整理後會同步更新。" : "已儲存在這台裝置。",
+        isCloudSyncConfigured()
+          ? "已儲存到共享資料。Davin 那邊重新整理後就會看到最新版。"
+          : "已儲存在這台裝置上。",
       );
-    } catch {
-      setMessage("儲存失敗，請檢查 Supabase 設定或網路狀態。");
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : "Unknown error";
+      setMessage(`儲存失敗：${detail}`);
     } finally {
       setSaving(false);
     }
@@ -211,9 +217,10 @@ export default function ManagePage() {
     try {
       await resetCouponManagerStateAsync();
       await loadManagerData();
-      setMessage("已還原成預設內容與順序。");
-    } catch {
-      setMessage("還原失敗，請檢查 Supabase 設定或網路狀態。");
+      setMessage("已還原成目前程式的預設內容。");
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : "Unknown error";
+      setMessage(`還原失敗：${detail}`);
     } finally {
       setSaving(false);
     }
@@ -223,13 +230,14 @@ export default function ManagePage() {
     setSaving(true);
     const result = await approveRedemptionRequestAsync(requestId);
     if (!result.ok) {
-      setMessage("批准失敗，可能是該票券次數已用完或資料不同步。");
+      setMessage("批准失敗，可能是票券資料已變更，請重新整理後再試。");
       setSaving(false);
       return;
     }
+
     await loadManagerData();
     setSaving(false);
-    setMessage("已批准申請，票券次數也同步扣除了。");
+    setMessage("已批准這張申請，票券次數也同步扣除了。");
   }
 
   async function rejectRequest(requestId: string) {
@@ -237,7 +245,7 @@ export default function ManagePage() {
     await rejectRedemptionRequestAsync(requestId);
     await loadManagerData();
     setSaving(false);
-    setMessage("已婉拒這次申請。");
+    setMessage("已婉拒這張申請。");
   }
 
   if (!ready) {
@@ -252,7 +260,7 @@ export default function ManagePage() {
             <p className="label-text">HANNAH CONTROL</p>
             <h1 className="mt-3 text-3xl font-black text-white">後台管理</h1>
             <p className="mt-3 text-sm leading-7 text-cream/70">
-              這裡可以調整 Davin 看到的票券內容、前台文案與申請批准狀態。
+              在這裡調整票券內容、前台文案，並處理 Davin 送出的自由模式申請。
             </p>
 
             <form className="mt-6 space-y-4" onSubmit={handleAdminLogin}>
@@ -265,7 +273,7 @@ export default function ManagePage() {
                     setPassword(event.target.value);
                     setError("");
                   }}
-                  placeholder="輸入 Hannah 管理密碼"
+                  placeholder="輸入 Hannah 專用密碼"
                 />
               </label>
               {error ? <p className="text-sm font-semibold text-red-300">{error}</p> : null}
@@ -298,7 +306,7 @@ export default function ManagePage() {
           <p className="label-text">IRON DAD CLUB</p>
           <h1 className="mt-3 text-3xl font-black text-white">後台管理</h1>
           <p className="mt-3 text-sm leading-7 text-cream/70">
-            你可以在這裡改票券內容、調整票券順序，還有修改登入前與登入後的前台文案。
+            你可以在這裡安排票券順序、調整剩餘次數、改文案，也能批准或婉拒 Davin 的申請。
           </p>
         </header>
 
@@ -313,11 +321,11 @@ export default function ManagePage() {
             <div>
               <h2 className="text-lg font-black text-white">待批准申請</h2>
               <p className="mt-1 text-xs font-semibold text-cream/45">
-                {refreshing ? "正在更新申請列表" : "每 8 秒自動更新一次"}
+                {refreshing ? "正在更新共享資料..." : "每 8 秒會自動更新一次"}
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <button className="ghost-button px-3 py-2 text-xs" onClick={() => loadManagerData()} type="button">
+              <button className="ghost-button px-3 py-2 text-xs" onClick={() => void loadManagerData()} type="button">
                 重新整理
               </button>
               <span className="text-sm font-bold text-gold">{pendingRequests.length} 筆</span>
@@ -330,17 +338,22 @@ export default function ManagePage() {
                 <article className="premium-card p-5" key={record.id}>
                   <p className="label-text">REQUEST</p>
                   <h3 className="mt-2 text-xl font-black text-white">{record.couponTitle}</h3>
-                  <p className="mt-2 text-sm text-cream/65">申請時間：{record.requestedAt}</p>
+                  <p className="mt-2 text-sm text-cream/65">送出時間：{record.requestedAt}</p>
                   <div className="mt-5 grid grid-cols-2 gap-3">
                     <button
                       className="ghost-button justify-center py-4 disabled:opacity-40"
                       disabled={saving}
-                      onClick={() => rejectRequest(record.id)}
+                      onClick={() => void rejectRequest(record.id)}
                       type="button"
                     >
                       婉拒
                     </button>
-                    <button className="primary-button disabled:opacity-40" disabled={saving} onClick={() => approveRequest(record.id)} type="button">
+                    <button
+                      className="primary-button disabled:opacity-40"
+                      disabled={saving}
+                      onClick={() => void approveRequest(record.id)}
+                      type="button"
+                    >
                       批准
                     </button>
                   </div>
@@ -348,7 +361,7 @@ export default function ManagePage() {
               ))
             ) : (
               <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 text-sm text-cream/60">
-                目前沒有新的申請在等待你處理。
+                目前沒有待批准的自由模式申請。
               </div>
             )}
           </div>
@@ -360,29 +373,20 @@ export default function ManagePage() {
           <div className="mt-5 grid gap-4">
             <label className="field-label">
               <span>主標題</span>
-              <input
-                value={siteCopy.beforeLogin.title}
-                onChange={(event) => updateBeforeLogin({ title: event.target.value })}
-              />
+              <input value={siteCopy.beforeLogin.title} onChange={(event) => updateBeforeLogin({ title: event.target.value })} />
             </label>
             <label className="field-label">
               <span>附標</span>
-              <input
-                value={siteCopy.beforeLogin.subtitle}
-                onChange={(event) => updateBeforeLogin({ subtitle: event.target.value })}
-              />
+              <input value={siteCopy.beforeLogin.subtitle} onChange={(event) => updateBeforeLogin({ subtitle: event.target.value })} />
             </label>
             <label className="field-label">
               <span>卡片標題</span>
-              <input
-                value={siteCopy.beforeLogin.cardTitle}
-                onChange={(event) => updateBeforeLogin({ cardTitle: event.target.value })}
-              />
+              <input value={siteCopy.beforeLogin.cardTitle} onChange={(event) => updateBeforeLogin({ cardTitle: event.target.value })} />
             </label>
             <label className="field-label">
-              <span>文案</span>
+              <span>內文</span>
               <textarea
-                rows={7}
+                rows={8}
                 value={siteCopy.beforeLogin.description}
                 onChange={(event) => updateBeforeLogin({ description: event.target.value })}
               />
@@ -396,38 +400,54 @@ export default function ManagePage() {
           <div className="mt-5 grid gap-4">
             <label className="field-label">
               <span>主標題</span>
-              <input
-                value={siteCopy.afterLogin.title}
-                onChange={(event) => updateAfterLogin({ title: event.target.value })}
-              />
+              <input value={siteCopy.afterLogin.title} onChange={(event) => updateAfterLogin({ title: event.target.value })} />
             </label>
             <label className="field-label">
               <span>附標</span>
-              <input
-                value={siteCopy.afterLogin.subtitle}
-                onChange={(event) => updateAfterLogin({ subtitle: event.target.value })}
-              />
+              <input value={siteCopy.afterLogin.subtitle} onChange={(event) => updateAfterLogin({ subtitle: event.target.value })} />
             </label>
             <label className="field-label">
-              <span>照片下方卡片小標</span>
+              <span>卡片小標</span>
               <input
                 value={siteCopy.afterLogin.memoryEyebrow}
                 onChange={(event) => updateAfterLogin({ memoryEyebrow: event.target.value })}
               />
             </label>
             <label className="field-label">
-              <span>照片下方卡片標題</span>
+              <span>卡片標題</span>
               <input
                 value={siteCopy.afterLogin.memoryTitle}
                 onChange={(event) => updateAfterLogin({ memoryTitle: event.target.value })}
               />
             </label>
             <label className="field-label">
-              <span>照片下方卡片文案</span>
+              <span>卡片內文</span>
               <textarea
-                rows={5}
+                rows={12}
                 value={siteCopy.afterLogin.memoryDescription}
                 onChange={(event) => updateAfterLogin({ memoryDescription: event.target.value })}
+              />
+            </label>
+            <label className="field-label">
+              <span>Elara 區小標</span>
+              <input
+                value={siteCopy.afterLogin.ultrasoundEyebrow}
+                onChange={(event) => updateAfterLogin({ ultrasoundEyebrow: event.target.value })}
+              />
+            </label>
+            <label className="field-label">
+              <span>Elara 區標題</span>
+              <input
+                value={siteCopy.afterLogin.ultrasoundTitle}
+                onChange={(event) => updateAfterLogin({ ultrasoundTitle: event.target.value })}
+              />
+            </label>
+            <label className="field-label">
+              <span>Elara 區內文</span>
+              <textarea
+                rows={4}
+                value={siteCopy.afterLogin.ultrasoundDescription}
+                onChange={(event) => updateAfterLogin({ ultrasoundDescription: event.target.value })}
               />
             </label>
           </div>
@@ -486,24 +506,17 @@ export default function ManagePage() {
                   </label>
                   <label className="field-label">
                     <span>分類</span>
-                    <input
-                      value={item.category}
-                      onChange={(event) => updateItem(item.id, { category: event.target.value })}
-                    />
+                    <input value={item.category} onChange={(event) => updateItem(item.id, { category: event.target.value })} />
                   </label>
                 </div>
 
                 <label className="field-label">
                   <span>效力</span>
-                  <textarea
-                    rows={3}
-                    value={item.effect}
-                    onChange={(event) => updateItem(item.id, { effect: event.target.value })}
-                  />
+                  <textarea rows={3} value={item.effect} onChange={(event) => updateItem(item.id, { effect: event.target.value })} />
                 </label>
 
                 <label className="field-label">
-                  <span>可兌換</span>
+                  <span>可兌換內容</span>
                   <textarea
                     rows={3}
                     value={item.redeemableForText}
@@ -512,7 +525,7 @@ export default function ManagePage() {
                 </label>
 
                 <label className="field-label">
-                  <span>可用於</span>
+                  <span>可使用情境</span>
                   <textarea
                     rows={3}
                     value={item.usableForText}
@@ -536,10 +549,7 @@ export default function ManagePage() {
 
                 <label className="field-label">
                   <span>有效期限</span>
-                  <input
-                    value={item.validity ?? ""}
-                    onChange={(event) => updateItem(item.id, { validity: event.target.value })}
-                  />
+                  <input value={item.validity ?? ""} onChange={(event) => updateItem(item.id, { validity: event.target.value })} />
                 </label>
               </div>
             </article>
@@ -548,10 +558,10 @@ export default function ManagePage() {
 
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#0a0b10]/92 p-4 backdrop-blur">
           <div className="mx-auto grid max-w-md grid-cols-2 gap-3">
-            <button className="ghost-button justify-center py-4 disabled:opacity-40" disabled={saving} onClick={resetDefaults} type="button">
+            <button className="ghost-button justify-center py-4 disabled:opacity-40" disabled={saving} onClick={() => void resetDefaults()} type="button">
               還原預設
             </button>
-            <button className="primary-button disabled:opacity-40" disabled={saving} onClick={saveChanges} type="button">
+            <button className="primary-button disabled:opacity-40" disabled={saving} onClick={() => void saveChanges()} type="button">
               {saving ? "儲存中" : "儲存變更"}
             </button>
           </div>
