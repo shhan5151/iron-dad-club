@@ -11,6 +11,7 @@ import {
   getCoupons,
   getSiteCopy,
   isLoggedIn,
+  loadAppSnapshot,
   login,
   type CouponState,
 } from "@/lib/storage";
@@ -42,12 +43,23 @@ export default function HomePage() {
   const [siteCopy, setSiteCopy] = useState<SiteCopy>(getSiteCopy());
 
   useEffect(() => {
-    const savedCoupons = getCoupons();
-    setAuthenticated(isLoggedIn());
-    setCouponList(savedCoupons);
-    setState(getCouponState(savedCoupons));
-    setSiteCopy(getSiteCopy());
-    setReady(true);
+    async function load() {
+      const snapshot = await loadAppSnapshot();
+      setAuthenticated(isLoggedIn());
+      setCouponList(snapshot.coupons);
+      setState(snapshot.couponState);
+      setSiteCopy(snapshot.siteCopy);
+      setReady(true);
+    }
+
+    load().catch(() => {
+      const savedCoupons = getCoupons();
+      setAuthenticated(isLoggedIn());
+      setCouponList(savedCoupons);
+      setState(getCouponState(savedCoupons));
+      setSiteCopy(getSiteCopy());
+      setReady(true);
+    });
   }, []);
 
   const totalRemaining = useMemo(
@@ -62,11 +74,11 @@ export default function HomePage() {
       return;
     }
     login();
-    const savedCoupons = getCoupons();
+    const savedCoupons = couponList.length ? couponList : getCoupons();
     setAuthenticated(true);
     setCouponList(savedCoupons);
-    setState(getCouponState(savedCoupons));
-    setSiteCopy(getSiteCopy());
+    setState(state);
+    setSiteCopy(siteCopy);
   }
 
   function handleLogout() {
