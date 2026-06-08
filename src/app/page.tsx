@@ -211,23 +211,22 @@ export default function HomePage() {
               />
             </div>
 
-            <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-              <div className="flex items-start gap-4">
-                <div className="min-w-0 flex-1">
-                  <p className="label-text text-cream/70">{siteCopy.afterLogin.memoryEyebrow}</p>
-                  <h2 className="mt-2 text-2xl font-black text-white">{siteCopy.afterLogin.memoryTitle}</h2>
-                </div>
-                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-gold/20 bg-black/20">
-                  <Image
-                    src={CARD_PHOTO}
-                    alt="Hannah and Davin celebration"
-                    fill
-                    unoptimized
-                    className="object-cover"
-                  />
-                </div>
+            <div className="relative mt-4 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+              <div className="absolute inset-0">
+                <Image
+                  src={CARD_PHOTO}
+                  alt="Hannah and Davin celebration"
+                  fill
+                  unoptimized
+                  className="object-cover object-center opacity-35"
+                />
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,9,14,0.4)_0%,rgba(8,9,14,0.72)_36%,rgba(8,9,14,0.9)_100%)]" />
               </div>
-              <div className="mt-4 space-y-4">{renderCardParagraphs(siteCopy.afterLogin.memoryDescription)}</div>
+              <div className="relative z-10">
+                <p className="label-text text-cream/70">{siteCopy.afterLogin.memoryEyebrow}</p>
+                <h2 className="mt-2 text-2xl font-black text-white">{siteCopy.afterLogin.memoryTitle}</h2>
+                <div className="mt-4 space-y-4">{renderCardParagraphs(siteCopy.afterLogin.memoryDescription)}</div>
+              </div>
             </div>
 
             <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
