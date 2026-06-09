@@ -6,6 +6,7 @@ import type { SiteCopy } from "@/lib/copy";
 import type { Coupon } from "@/lib/coupons";
 import {
   approveRedemptionRequestAsync,
+  deleteRedemptionRecordAsync,
   getCouponState,
   getCoupons,
   getRecords,
@@ -261,6 +262,14 @@ export default function ManagePage() {
     setMessage("已婉拒這張申請。");
   }
 
+  async function deleteRecord(recordId: string) {
+    setSaving(true);
+    await deleteRedemptionRecordAsync(recordId);
+    await loadManagerData();
+    setSaving(false);
+    setMessage("已刪除這筆兌換紀錄。");
+  }
+
   if (!ready) {
     return <main className="min-h-dvh bg-iron text-cream" />;
   }
@@ -379,6 +388,46 @@ export default function ManagePage() {
             ) : (
               <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 text-sm text-cream/60">
                 目前沒有待批准的自由模式申請。
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="mt-5 premium-card p-5">
+          <p className="label-text">RECORD MANAGER</p>
+          <div className="mt-2 flex items-center justify-between">
+            <h2 className="text-2xl font-black text-white">兌換紀錄管理</h2>
+            <span className="text-sm font-bold text-gold">{records.length} 筆</span>
+          </div>
+
+          <div className="mt-5 space-y-3">
+            {records.length ? (
+              records.map((record) => (
+                <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-4" key={record.id}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-black text-white">{record.couponTitle}</p>
+                      <p className="mt-1 text-xs text-cream/48">
+                        {record.status === "待批准"
+                          ? `申請時間 ${record.requestedAt}`
+                          : `處理時間 ${record.resolvedAt ?? record.requestedAt}`}
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-sm font-bold text-gold">{record.status}</span>
+                  </div>
+                  <button
+                    className="ghost-button mt-4 w-full justify-center py-3 text-sm disabled:opacity-40"
+                    disabled={saving}
+                    onClick={() => void deleteRecord(record.id)}
+                    type="button"
+                  >
+                    刪除紀錄
+                  </button>
+                </article>
+              ))
+            ) : (
+              <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 text-sm text-cream/60">
+                目前沒有可刪除的兌換紀錄。
               </div>
             )}
           </div>
