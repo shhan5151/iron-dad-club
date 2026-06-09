@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { SiteCopy } from "@/lib/copy";
 import type { Coupon } from "@/lib/coupons";
+import { defaultSiteImages, type SiteImages } from "@/lib/media";
 import {
   approveRedemptionRequestAsync,
   deleteRedemptionRecordAsync,
@@ -11,6 +12,7 @@ import {
   getCoupons,
   getRecords,
   getSiteCopy,
+  getSiteImages,
   isCloudSyncConfigured,
   loadAppSnapshot,
   rejectRedemptionRequestAsync,
@@ -29,6 +31,54 @@ type EditableCoupon = Coupon & {
   usableForText: string;
   rulesText: string;
 };
+
+type SiteImageField = keyof SiteImages;
+
+const photoSlots: Array<{
+  key: SiteImageField;
+  eyebrow: string;
+  label: string;
+  hint: string;
+  previewClass: string;
+  wrapClass?: string;
+}> = [
+  {
+    key: "beforeLoginBackground",
+    eyebrow: "LOGIN HERO",
+    label: "登入前背景照",
+    hint: "建議用橫式運動照，會鋪滿整個登入頁背景。",
+    previewClass: "object-cover",
+  },
+  {
+    key: "beforeLoginProfile",
+    eyebrow: "MEMBER PORTRAIT",
+    label: "登入前 Profile 照",
+    hint: "適合臉清楚的單人照，會顯示在卡片右上角。",
+    previewClass: "object-cover",
+  },
+  {
+    key: "afterLoginMemoryCollage",
+    eyebrow: "MEMORY BOARD",
+    label: "登入後回憶拼圖",
+    hint: "建議用完整拼圖或長圖，畫面會完整顯示。",
+    previewClass: "object-contain",
+    wrapClass: "bg-[#050608] p-2",
+  },
+  {
+    key: "afterLoginCard",
+    eyebrow: "LETTER PHOTO",
+    label: "卡片照片",
+    hint: "會放在文案卡片上方，適合有情緒的兩人照。",
+    previewClass: "object-cover",
+  },
+  {
+    key: "afterLoginUltrasound",
+    eyebrow: "ELARA",
+    label: "Elara 專區照片",
+    hint: "適合超音波照或任何你想放在 Elara 區的照片。",
+    previewClass: "object-cover",
+  },
+];
 
 function toText(lines?: string[]) {
   return lines?.join("\n") ?? "";
@@ -74,6 +124,50 @@ function moveInArray<T>(list: T[], fromIndex: number, toIndex: number) {
   return next;
 }
 
+function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ""));
+    reader.onerror = () => reject(new Error("圖片讀取失敗"));
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadImageElement(source: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new window.Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("圖片載入失敗"));
+    image.src = source;
+  });
+}
+
+async function optimizeImage(file: File) {
+  if (!file.type.startsWith("image/")) {
+    throw new Error("請選擇圖片檔");
+  }
+
+  const source = await readFileAsDataUrl(file);
+  const image = await loadImageElement(source);
+
+  const maxDimension = 1600;
+  const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
+  const width = Math.max(1, Math.round(image.width * scale));
+  const height = Math.max(1, Math.round(image.height * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("圖片處理失敗");
+  }
+
+  context.drawImage(image, 0, 0, width, height);
+  return canvas.toDataURL("image/jpeg", 0.82);
+}
+
 export default function ManagePage() {
   const [ready, setReady] = useState(false);
   const [adminAuthed, setAdminAuthed] = useState(false);
@@ -81,10 +175,12 @@ export default function ManagePage() {
   const [error, setError] = useState("");
   const [items, setItems] = useState<EditableCoupon[]>([]);
   const [siteCopy, setSiteCopy] = useState<SiteCopy>(getSiteCopy());
+  const [siteImages, setSiteImages] = useState<SiteImages>(getSiteImages());
   const [message, setMessage] = useState("");
   const [records, setRecords] = useState<RedemptionRecord[]>([]);
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState<SiteImageField | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   useEffect(() => {
@@ -122,6 +218,7 @@ export default function ManagePage() {
       if (!options?.preserveEditor) {
         setItems(snapshot.coupons.map((coupon) => toEditable(coupon, snapshot.couponState)));
         setSiteCopy(snapshot.siteCopy);
+        setSiteImages(snapshot.siteImages);
         setHasUnsavedChanges(false);
       }
       setRecords(snapshot.records);
@@ -131,6 +228,7 @@ export default function ManagePage() {
       if (!options?.preserveEditor) {
         setItems(coupons.map((coupon) => toEditable(coupon, state)));
         setSiteCopy(getSiteCopy());
+        setSiteImages(getSiteImages());
         setHasUnsavedChanges(false);
       }
       setRecords(getRecords());
@@ -203,13 +301,45 @@ export default function ManagePage() {
     setHasUnsavedChanges(true);
   }
 
+  function updateSiteImage(key: SiteImageField, value: string) {
+    setSiteImages((current) => ({
+      ...current,
+      [key]: value,
+    }));
+    setMessage("");
+    setHasUnsavedChanges(true);
+  }
+
+  async function handleImageSelected(key: SiteImageField, file: File | null) {
+    if (!file) {
+      return;
+    }
+
+    setUploadingImage(key);
+    try {
+      const optimized = await optimizeImage(file);
+      updateSiteImage(key, optimized);
+      setMessage("圖片已載入，記得按一次「儲存變更」。");
+    } catch (uploadError) {
+      const detail = uploadError instanceof Error ? uploadError.message : "Unknown error";
+      setMessage(`圖片處理失敗：${detail}`);
+    } finally {
+      setUploadingImage(null);
+    }
+  }
+
+  function resetSiteImage(key: SiteImageField) {
+    updateSiteImage(key, defaultSiteImages[key]);
+    setMessage("這張照片已還原成預設版本，記得按一次「儲存變更」。");
+  }
+
   async function saveChanges() {
     setSaving(true);
     const nextCoupons = items.map(toCoupon);
     const nextState = Object.fromEntries(items.map((item) => [item.id, Math.max(0, Number(item.remaining) || 0)]));
 
     try {
-      await saveCouponManagerStateAsync(nextCoupons, nextState, siteCopy);
+      await saveCouponManagerStateAsync(nextCoupons, nextState, siteCopy, siteImages);
       setItems(nextCoupons.map((coupon) => toEditable(coupon, nextState)));
       setMessage(
         isCloudSyncConfigured()
@@ -217,8 +347,8 @@ export default function ManagePage() {
           : "已儲存在這台裝置上。",
       );
       setHasUnsavedChanges(false);
-    } catch (error) {
-      const detail = error instanceof Error ? error.message : "Unknown error";
+    } catch (saveError) {
+      const detail = saveError instanceof Error ? saveError.message : "Unknown error";
       setMessage(`儲存失敗：${detail}`);
     } finally {
       setSaving(false);
@@ -232,8 +362,8 @@ export default function ManagePage() {
       await loadManagerData();
       setMessage("已還原成目前程式的預設內容。");
       setHasUnsavedChanges(false);
-    } catch (error) {
-      const detail = error instanceof Error ? error.message : "Unknown error";
+    } catch (resetError) {
+      const detail = resetError instanceof Error ? resetError.message : "Unknown error";
       setMessage(`還原失敗：${detail}`);
     } finally {
       setSaving(false);
@@ -282,7 +412,7 @@ export default function ManagePage() {
             <p className="label-text">HANNAH CONTROL</p>
             <h1 className="mt-3 text-3xl font-black text-white">後台管理</h1>
             <p className="mt-3 text-sm leading-7 text-cream/70">
-              在這裡調整票券內容、前台文案，並處理 Davin 送出的自由模式申請。
+              在這裡調整票券內容、前台文案、照片，並處理 Davin 送出的自由模式申請。
             </p>
 
             <form className="mt-6 space-y-4" onSubmit={handleAdminLogin}>
@@ -328,7 +458,7 @@ export default function ManagePage() {
           <p className="label-text">IRON DAD CLUB</p>
           <h1 className="mt-3 text-3xl font-black text-white">後台管理</h1>
           <p className="mt-3 text-sm leading-7 text-cream/70">
-            你可以在這裡安排票券順序、調整剩餘次數、改文案，也能批准或婉拒 Davin 的申請。
+            你可以在這裡安排票券順序、調整剩餘次數、改文案、換照片，也能批准或婉拒 Davin 的申請。
           </p>
         </header>
 
@@ -346,7 +476,7 @@ export default function ManagePage() {
                 {refreshing
                   ? "正在更新共享資料..."
                   : hasUnsavedChanges
-                    ? "你正在編輯中，系統只更新申請清單，不會覆蓋文字"
+                    ? "你正在編輯中，系統只更新申請清單，不會覆蓋文字或圖片"
                     : "每 8 秒會自動更新一次"}
               </p>
             </div>
@@ -434,6 +564,53 @@ export default function ManagePage() {
         </section>
 
         <section className="mt-5 premium-card p-5">
+          <p className="label-text">PHOTO MANAGER</p>
+          <h2 className="mt-2 text-2xl font-black text-white">照片管理</h2>
+          <p className="mt-2 text-sm leading-7 text-cream/65">
+            你可以直接在這裡換圖。系統會先幫你壓縮，再跟文案一起存進共享資料。
+          </p>
+
+          <div className="mt-5 space-y-4">
+            {photoSlots.map((slot) => (
+              <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-4" key={slot.key}>
+                <p className="label-text">{slot.eyebrow}</p>
+                <h3 className="mt-2 text-lg font-black text-white">{slot.label}</h3>
+                <p className="mt-2 text-sm leading-6 text-cream/60">{slot.hint}</p>
+
+                <div className={`mt-4 relative aspect-[4/3] overflow-hidden rounded-2xl border border-white/10 ${slot.wrapClass ?? "bg-black/25"}`}>
+                  <img alt={slot.label} className={`h-full w-full ${slot.previewClass}`} src={siteImages[slot.key]} />
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <label className="primary-button cursor-pointer justify-center">
+                    {uploadingImage === slot.key ? "處理中" : "上傳新照片"}
+                    <input
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploadingImage === slot.key || saving}
+                      onChange={(event) => {
+                        const file = event.target.files?.[0] ?? null;
+                        void handleImageSelected(slot.key, file);
+                        event.currentTarget.value = "";
+                      }}
+                      type="file"
+                    />
+                  </label>
+                  <button
+                    className="ghost-button justify-center py-3 disabled:opacity-40"
+                    disabled={uploadingImage === slot.key || saving}
+                    onClick={() => resetSiteImage(slot.key)}
+                    type="button"
+                  >
+                    還原預設
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-5 premium-card p-5">
           <p className="label-text">FRONT COPY</p>
           <h2 className="mt-2 text-2xl font-black text-white">登入前文案</h2>
           <div className="mt-5 grid gap-4">
@@ -481,10 +658,7 @@ export default function ManagePage() {
             </label>
             <label className="field-label">
               <span>卡片標題</span>
-              <input
-                value={siteCopy.afterLogin.memoryTitle}
-                onChange={(event) => updateAfterLogin({ memoryTitle: event.target.value })}
-              />
+              <input value={siteCopy.afterLogin.memoryTitle} onChange={(event) => updateAfterLogin({ memoryTitle: event.target.value })} />
             </label>
             <label className="field-label">
               <span>卡片內文</span>
@@ -627,7 +801,7 @@ export default function ManagePage() {
             <button className="ghost-button justify-center py-4 disabled:opacity-40" disabled={saving} onClick={() => void resetDefaults()} type="button">
               還原預設
             </button>
-            <button className="primary-button disabled:opacity-40" disabled={saving} onClick={() => void saveChanges()} type="button">
+            <button className="primary-button disabled:opacity-40" disabled={saving || Boolean(uploadingImage)} onClick={() => void saveChanges()} type="button">
               {saving ? "儲存中" : "儲存變更"}
             </button>
           </div>
