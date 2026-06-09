@@ -39,7 +39,7 @@ function renderCardParagraphs(text: string) {
     .map((block) => block.trim())
     .filter(Boolean)
     .map((block) => (
-      <p key={block} className="text-sm leading-8 text-cream/78 whitespace-pre-line">
+      <p key={block} className="whitespace-pre-line text-sm leading-8 text-cream/78">
         {block}
       </p>
     ));
@@ -97,16 +97,12 @@ export default function HomePage() {
   function handleLogin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (password.trim().toUpperCase() !== PASSWORD) {
-      setError("密碼不正確。請輸入 Elara 的通行代碼。");
+      setError("密碼不正確，請輸入 Elara 的通關密碼。");
       return;
     }
+
     login();
-    const savedCoupons = couponList.length ? couponList : getCoupons();
     setAuthenticated(true);
-    setCouponList(savedCoupons);
-    setState(state);
-    setSiteCopy(siteCopy);
-    setSiteImages(siteImages);
   }
 
   function handleLogout() {
@@ -163,6 +159,7 @@ export default function HomePage() {
                   />
                 </div>
               </div>
+
               <div className="my-5 h-px bg-gold/25" />
               <div className="space-y-3">{renderParagraphs(siteCopy.beforeLogin.description)}</div>
 
@@ -177,13 +174,13 @@ export default function HomePage() {
                     }}
                     type="password"
                     autoComplete="current-password"
-                    placeholder="輸入專屬密碼"
+                    placeholder="輸入生日通關密碼"
                     className="mt-2 w-full rounded-xl border border-gold/25 bg-black/35 px-4 py-4 text-base font-semibold text-white outline-none ring-gold/35 transition focus:border-gold focus:ring-4"
                   />
                 </label>
                 {error ? <p className="text-sm font-semibold text-red-300">{error}</p> : null}
                 <button className="primary-button w-full" type="submit">
-                  進入券包
+                  進入票券包
                 </button>
               </form>
             </div>
@@ -228,7 +225,7 @@ export default function HomePage() {
               <div className="relative aspect-[4/3] overflow-hidden border-b border-white/10 bg-black/20">
                 <Image
                   src={siteImages.afterLoginCard}
-                  alt="Hannah and Davin celebration"
+                  alt="Hannah and Davin"
                   fill
                   unoptimized
                   className="object-cover object-[center_78%]"
@@ -264,7 +261,7 @@ export default function HomePage() {
             <div className="mt-5 grid grid-cols-3 gap-3">
               <div className="metric-box">
                 <span>{couponList.length}</span>
-                <p>券種</p>
+                <p>票券</p>
               </div>
               <div className="metric-box">
                 <span>{totalRemaining}</span>
@@ -272,14 +269,14 @@ export default function HomePage() {
               </div>
               <div className="metric-box">
                 <span>2026</span>
-                <p>啟用</p>
+                <p>版本</p>
               </div>
             </div>
           </div>
         </header>
 
         <div className="mt-6 flex items-center justify-between">
-          <h2 className="text-lg font-black text-white">券包</h2>
+          <h2 className="text-lg font-black text-white">票券列表</h2>
           <Link className="text-sm font-bold text-gold underline-offset-4 hover:underline" href="/records">
             兌換紀錄
           </Link>
