@@ -5,11 +5,13 @@ import Image from "next/image";
 import Link from "next/link";
 import type { SiteCopy } from "@/lib/copy";
 import type { Coupon } from "@/lib/coupons";
+import type { SiteImages } from "@/lib/media";
 import {
   clearSession,
   getCouponState,
   getCoupons,
   getSiteCopy,
+  getSiteImages,
   isLoggedIn,
   loadAppSnapshot,
   login,
@@ -18,11 +20,6 @@ import {
 import { RegisterServiceWorker } from "@/components/RegisterServiceWorker";
 
 const PASSWORD = "ELARA0612";
-const DAVIN_BIKE_COAST_PHOTO = "/photos/davin-bike-coast.jpg";
-const DAVIN_PROFILE_PHOTO = "/photos/davin-profile.jpg";
-const MEMORY_COLLAGE_PHOTO = "/photos/memory-collage.png";
-const CARD_PHOTO = "/photos/card-photo.JPG";
-const ELARA_ULTRASOUND_PHOTO = "/photos/elara-ultrasound.jpg";
 
 function renderParagraphs(text: string) {
   return text
@@ -56,6 +53,7 @@ export default function HomePage() {
   const [state, setState] = useState<CouponState>({});
   const [couponList, setCouponList] = useState<Coupon[]>([]);
   const [siteCopy, setSiteCopy] = useState<SiteCopy>(getSiteCopy());
+  const [siteImages, setSiteImages] = useState<SiteImages>(getSiteImages());
 
   useEffect(() => {
     async function refreshHomeData() {
@@ -64,6 +62,7 @@ export default function HomePage() {
       setCouponList(snapshot.coupons);
       setState(snapshot.couponState);
       setSiteCopy(snapshot.siteCopy);
+      setSiteImages(snapshot.siteImages);
       setReady(true);
     }
 
@@ -73,6 +72,7 @@ export default function HomePage() {
       setCouponList(savedCoupons);
       setState(getCouponState(savedCoupons));
       setSiteCopy(getSiteCopy());
+      setSiteImages(getSiteImages());
       setReady(true);
     });
 
@@ -106,6 +106,7 @@ export default function HomePage() {
     setCouponList(savedCoupons);
     setState(state);
     setSiteCopy(siteCopy);
+    setSiteImages(siteImages);
   }
 
   function handleLogout() {
@@ -125,7 +126,7 @@ export default function HomePage() {
         <section className="relative flex min-h-dvh flex-col justify-between px-5 py-7">
           <div className="absolute inset-0">
             <Image
-              src={DAVIN_BIKE_COAST_PHOTO}
+              src={siteImages.beforeLoginBackground}
               alt="Davin riding along the coast"
               fill
               priority
@@ -153,7 +154,7 @@ export default function HomePage() {
                 </div>
                 <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-gold/30 bg-black/30 shadow-[0_12px_30px_rgba(0,0,0,0.28)]">
                   <Image
-                    src={DAVIN_PROFILE_PHOTO}
+                    src={siteImages.beforeLoginProfile}
                     alt="Davin portrait"
                     fill
                     priority
@@ -214,7 +215,7 @@ export default function HomePage() {
           <div className="premium-card overflow-hidden p-5">
             <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-white/10 bg-[#050608] p-2">
               <Image
-                src={MEMORY_COLLAGE_PHOTO}
+                src={siteImages.afterLoginMemoryCollage}
                 alt="Davin and Hannah memory collage"
                 fill
                 priority
@@ -226,7 +227,7 @@ export default function HomePage() {
             <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]">
               <div className="relative aspect-[4/3] overflow-hidden border-b border-white/10 bg-black/20">
                 <Image
-                  src={CARD_PHOTO}
+                  src={siteImages.afterLoginCard}
                   alt="Hannah and Davin celebration"
                   fill
                   unoptimized
@@ -245,7 +246,7 @@ export default function HomePage() {
               <div className="grid gap-4 sm:grid-cols-[0.95fr_1.05fr] sm:items-center">
                 <div className="relative aspect-[5/4] overflow-hidden rounded-2xl border border-white/10 bg-black/25">
                   <Image
-                    src={ELARA_ULTRASOUND_PHOTO}
+                    src={siteImages.afterLoginUltrasound}
                     alt="Elara ultrasound"
                     fill
                     unoptimized
