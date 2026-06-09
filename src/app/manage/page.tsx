@@ -124,6 +124,27 @@ function moveInArray<T>(list: T[], fromIndex: number, toIndex: number) {
   return next;
 }
 
+function createEmptyCoupon(): EditableCoupon {
+  const stamp = Date.now();
+  return {
+    id: `custom-${stamp}`,
+    code: `NEW-${String(stamp).slice(-4)}`,
+    category: "Custom Pass",
+    title: "新票券",
+    effect: "",
+    redeemableFor: [],
+    usableFor: [],
+    rules: [],
+    note: "",
+    validity: "",
+    initialUses: 1,
+    remaining: 1,
+    redeemableForText: "",
+    usableForText: "",
+    rulesText: "",
+  };
+}
+
 function readFileAsDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -274,6 +295,28 @@ export default function ManagePage() {
       return moveInArray(current, index, targetIndex);
     });
     setMessage("");
+    setHasUnsavedChanges(true);
+  }
+
+  function addCoupon() {
+    setItems((current) => [...current, createEmptyCoupon()]);
+    setMessage("已新增一張新票券，記得按一次「儲存變更」。");
+    setHasUnsavedChanges(true);
+  }
+
+  function removeCoupon(id: string) {
+    const target = items.find((item) => item.id === id);
+    if (!target) {
+      return;
+    }
+
+    const approved = window.confirm(`要刪除「${target.title || "這張票券"}」嗎？`);
+    if (!approved) {
+      return;
+    }
+
+    setItems((current) => current.filter((item) => item.id !== id));
+    setMessage("已從清單移除這張票券，記得按一次「儲存變更」。");
     setHasUnsavedChanges(true);
   }
 
@@ -693,6 +736,16 @@ export default function ManagePage() {
           </div>
         </section>
 
+        <section className="mt-5 flex items-center justify-between">
+          <div>
+            <p className="label-text">COUPON MANAGER</p>
+            <h2 className="mt-2 text-2xl font-black text-white">票券管理</h2>
+          </div>
+          <button className="primary-button px-4 py-3" onClick={addCoupon} type="button">
+            新增票券
+          </button>
+        </section>
+
         <div className="mt-5 space-y-5">
           {items.map((item, index) => (
             <article className="premium-card p-5" key={item.id}>
@@ -732,6 +785,14 @@ export default function ManagePage() {
                   往下移
                 </button>
               </div>
+
+              <button
+                className="ghost-button mt-3 w-full justify-center py-3 text-sm text-red-200 disabled:opacity-40"
+                onClick={() => removeCoupon(item.id)}
+                type="button"
+              >
+                刪除此票券
+              </button>
 
               <div className="mt-5 grid gap-4">
                 <label className="field-label">
