@@ -1,11 +1,13 @@
 import { defaultSiteCopy, type SiteCopy } from "@/lib/copy";
 import { defaultCoupons, type Coupon } from "@/lib/coupons";
+import { defaultSiteImages, type SiteImages } from "@/lib/media";
 
 const LOGIN_KEY = "iron-dad-club.logged-in";
 const COUPON_STATE_KEY = "iron-dad-club.coupons";
 const CUSTOM_COUPONS_KEY = "iron-dad-club.custom-coupons";
 const RECORDS_KEY = "iron-dad-club.records";
 const SITE_COPY_KEY = "iron-dad-club.site-copy";
+const SITE_IMAGES_KEY = "iron-dad-club.site-images";
 
 const CLOUD_STATE_ID = "iron-dad-club";
 const CLOUD_TABLE = "app_state";
@@ -37,6 +39,7 @@ export type AppSnapshot = {
   couponState: CouponState;
   records: RedemptionRecord[];
   siteCopy: SiteCopy;
+  siteImages: SiteImages;
 };
 
 type SaveResult = {
@@ -57,6 +60,7 @@ function createDefaultSnapshot(): AppSnapshot {
     couponState: createDefaultCouponState(defaultCoupons),
     records: [],
     siteCopy: defaultSiteCopy,
+    siteImages: defaultSiteImages,
   };
 }
 
@@ -150,6 +154,13 @@ function mergeSiteCopy(partial?: Partial<SiteCopy>): SiteCopy {
   return merged;
 }
 
+function mergeSiteImages(partial?: Partial<SiteImages>): SiteImages {
+  return {
+    ...defaultSiteImages,
+    ...partial,
+  };
+}
+
 function mergeSnapshot(partial?: Partial<AppSnapshot>): AppSnapshot {
   const coupons = partial?.coupons?.length ? partial.coupons : defaultCoupons;
   const records = Array.isArray(partial?.records)
@@ -166,6 +177,7 @@ function mergeSnapshot(partial?: Partial<AppSnapshot>): AppSnapshot {
     },
     records,
     siteCopy: mergeSiteCopy(partial?.siteCopy),
+    siteImages: mergeSiteImages(partial?.siteImages),
   };
 }
 
@@ -177,6 +189,7 @@ function getLocalSnapshot(): AppSnapshot {
     couponState: getCouponState(coupons),
     records: getRecords(),
     siteCopy: getSiteCopy(),
+    siteImages: getSiteImages(),
   };
 }
 
@@ -185,6 +198,7 @@ function saveLocalSnapshot(snapshot: AppSnapshot) {
   writeJson(COUPON_STATE_KEY, snapshot.couponState);
   writeJson(RECORDS_KEY, snapshot.records);
   writeJson(SITE_COPY_KEY, snapshot.siteCopy);
+  writeJson(SITE_IMAGES_KEY, snapshot.siteImages);
 }
 
 async function readResponseError(response: Response, fallback: string) {
@@ -443,19 +457,30 @@ export function getSiteCopy(): SiteCopy {
   return mergeSiteCopy(readJson<Partial<SiteCopy>>(SITE_COPY_KEY, defaultSiteCopy));
 }
 
-export function saveCouponManagerState(couponList: Coupon[], state: CouponState, siteCopy: SiteCopy) {
+export function getSiteImages(): SiteImages {
+  return mergeSiteImages(readJson<Partial<SiteImages>>(SITE_IMAGES_KEY, defaultSiteImages));
+}
+
+export function saveCouponManagerState(couponList: Coupon[], state: CouponState, siteCopy: SiteCopy, siteImages: SiteImages) {
   writeJson(CUSTOM_COUPONS_KEY, couponList);
   writeJson(COUPON_STATE_KEY, state);
   writeJson(SITE_COPY_KEY, siteCopy);
+  writeJson(SITE_IMAGES_KEY, siteImages);
 }
 
-export async function saveCouponManagerStateAsync(couponList: Coupon[], state: CouponState, siteCopy: SiteCopy) {
+export async function saveCouponManagerStateAsync(
+  couponList: Coupon[],
+  state: CouponState,
+  siteCopy: SiteCopy,
+  siteImages: SiteImages,
+) {
   const current = await loadAppSnapshot();
   await persistSnapshot({
     ...current,
     coupons: couponList,
     couponState: state,
     siteCopy,
+    siteImages,
   });
 }
 
@@ -463,6 +488,7 @@ export function resetCouponManagerState() {
   writeJson(CUSTOM_COUPONS_KEY, defaultCoupons);
   writeJson(COUPON_STATE_KEY, createDefaultCouponState(defaultCoupons));
   writeJson(SITE_COPY_KEY, defaultSiteCopy);
+  writeJson(SITE_IMAGES_KEY, defaultSiteImages);
 }
 
 export async function resetCouponManagerStateAsync() {
@@ -648,3 +674,4 @@ export async function deleteRedemptionRecordAsync(recordId: string): Promise<{ o
   });
   return { ok: true };
 }
+", "encoding": "utf-8", "sha": "38a12a0a58b520d6da70c90bc37a2a1f4d4806d2", "display_url": "https://github.com/shhan5151/iron-dad-club/blob/main/src/lib/storage.ts", "display_title": "storage.ts"}
