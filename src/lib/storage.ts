@@ -16,14 +16,8 @@ const SERVER_SYNC_ENDPOINT = "/api/app-state";
 const RAW_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-const LEGACY_AFTER_LOGIN_COPY = {
-  memoryEyebrow: "2020-2026",
-  memoryTitle: "Davin & Hannah",
-  memoryDescription: "從第一次合照，到紐西蘭、求婚、第一個寶寶，這張 Pass 也是你們一起走到今天的紀念票。",
-};
-
 export type CouponState = Record<string, number>;
-export type RedemptionStatus = "待批准" | "已批准" | "已婉拒";
+export type RedemptionStatus = "pending" | "approved" | "rejected";
 
 export type RedemptionRecord = {
   id: string;
@@ -64,24 +58,28 @@ function createDefaultSnapshot(): AppSnapshot {
   };
 }
 
-function isRedemptionStatus(value: unknown): value is RedemptionStatus {
-  return value === "待批准" || value === "已批准" || value === "已婉拒";
+function normalizeStatus(value: unknown): RedemptionStatus {
+  if (value === "pending" || value === "待批准") {
+    return "pending";
+  }
+
+  if (value === "approved" || value === "已批准") {
+    return "approved";
+  }
+
+  if (value === "rejected" || value === "已婉拒") {
+    return "rejected";
+  }
+
+  return "pending";
 }
 
-function normalizeStatus(value: unknown): RedemptionStatus {
-  if (isRedemptionStatus(value)) {
-    return value;
-  }
-
-  if (value === "pending") {
-    return "待批准";
-  }
-
-  if (value === "approved") {
+export function getRedemptionStatusLabel(status: RedemptionStatus) {
+  if (status === "approved") {
     return "已批准";
   }
 
-  if (value === "rejected") {
+  if (status === "rejected") {
     return "已婉拒";
   }
 
@@ -125,7 +123,7 @@ function writeJson<T>(key: string, value: T) {
 }
 
 function mergeSiteCopy(partial?: Partial<SiteCopy>): SiteCopy {
-  const merged = {
+  return {
     beforeLogin: {
       ...defaultSiteCopy.beforeLogin,
       ...partial?.beforeLogin,
@@ -135,23 +133,6 @@ function mergeSiteCopy(partial?: Partial<SiteCopy>): SiteCopy {
       ...partial?.afterLogin,
     },
   };
-
-  const isLegacyAfterLoginCopy =
-    merged.afterLogin.memoryEyebrow === LEGACY_AFTER_LOGIN_COPY.memoryEyebrow &&
-    merged.afterLogin.memoryTitle === LEGACY_AFTER_LOGIN_COPY.memoryTitle &&
-    merged.afterLogin.memoryDescription === LEGACY_AFTER_LOGIN_COPY.memoryDescription;
-
-  if (isLegacyAfterLoginCopy) {
-    merged.afterLogin = {
-      ...defaultSiteCopy.afterLogin,
-      ...partial?.afterLogin,
-      memoryEyebrow: defaultSiteCopy.afterLogin.memoryEyebrow,
-      memoryTitle: defaultSiteCopy.afterLogin.memoryTitle,
-      memoryDescription: defaultSiteCopy.afterLogin.memoryDescription,
-    };
-  }
-
-  return merged;
 }
 
 function mergeSiteImages(partial?: Partial<SiteImages>): SiteImages {
@@ -204,10 +185,10 @@ function saveLocalSnapshot(snapshot: AppSnapshot) {
 async function readResponseError(response: Response, fallback: string) {
   const responseText = (await response.text()).trim();
   if (!responseText) {
-    return `${fallback}（${response.status}）`;
+    return `${fallback} (${response.status})`;
   }
 
-  return `${fallback}（${response.status}）: ${responseText}`;
+  return `${fallback} (${response.status}): ${responseText}`;
 }
 
 function createSupabaseHeaders(apiKey: string) {
@@ -243,7 +224,7 @@ async function fetchServerSnapshot(): Promise<AppSnapshot | null> {
   }
 
   if (!response.ok) {
-    throw new Error(await readResponseError(response, "共享資料讀取失敗"));
+    throw new Error(await readResponseError(response, "伺服器共享資料讀取失敗"));
   }
 
   const payload = (await response.json()) as { snapshot?: Partial<AppSnapshot> | null };
@@ -268,7 +249,7 @@ async function saveServerSnapshot(snapshot: AppSnapshot): Promise<SaveResult> {
   }
 
   if (!response.ok) {
-    throw new Error(await readResponseError(response, "共享資料儲存失敗"));
+    throw new Error(await readResponseError(response, "伺服器共享資料儲存失敗"));
   }
 
   return { synced: true };
@@ -287,7 +268,7 @@ async function fetchDirectCloudSnapshot(): Promise<AppSnapshot | null> {
   );
 
   if (!response.ok) {
-    throw new Error(await readResponseError(response, "Supabase 資料讀取失敗"));
+    throw new Error(await readResponseError(response, "Supabase 讀取失敗"));
   }
 
   const rows = (await response.json()) as Array<{ payload?: Partial<AppSnapshot> }>;
@@ -314,7 +295,7 @@ async function saveDirectCloudSnapshot(snapshot: AppSnapshot): Promise<SaveResul
   });
 
   if (!response.ok) {
-    throw new Error(await readResponseError(response, "Supabase 資料儲存失敗"));
+    throw new Error(await readResponseError(response, "Supabase 儲存失敗"));
   }
 
   return { synced: true };
@@ -329,7 +310,7 @@ async function fetchRemoteSnapshot(): Promise<AppSnapshot | null> {
       return serverSnapshot;
     }
   } catch (error) {
-    lastError = error instanceof Error ? error : new Error("共享資料讀取失敗");
+    lastError = error instanceof Error ? error : new Error("伺服器共享資料讀取失敗");
   }
 
   try {
@@ -338,7 +319,7 @@ async function fetchRemoteSnapshot(): Promise<AppSnapshot | null> {
       return cloudSnapshot;
     }
   } catch (error) {
-    lastError = error instanceof Error ? error : new Error("Supabase 資料讀取失敗");
+    lastError = error instanceof Error ? error : new Error("Supabase 讀取失敗");
   }
 
   if (lastError) {
@@ -357,7 +338,7 @@ async function saveRemoteSnapshot(snapshot: AppSnapshot): Promise<SaveResult> {
       return result;
     }
   } catch (error) {
-    lastError = error instanceof Error ? error : new Error("共享資料儲存失敗");
+    lastError = error instanceof Error ? error : new Error("伺服器共享資料儲存失敗");
   }
 
   try {
@@ -366,7 +347,7 @@ async function saveRemoteSnapshot(snapshot: AppSnapshot): Promise<SaveResult> {
       return result;
     }
   } catch (error) {
-    lastError = error instanceof Error ? error : new Error("Supabase 資料儲存失敗");
+    lastError = error instanceof Error ? error : new Error("Supabase 儲存失敗");
   }
 
   if (lastError) {
@@ -519,7 +500,7 @@ function formatTimestamp(date = new Date()) {
 }
 
 export function hasPendingRequest(couponId: string) {
-  return getRecords().some((record) => record.couponId === couponId && record.status === "待批准");
+  return getRecords().some((record) => record.couponId === couponId && record.status === "pending");
 }
 
 export function submitRedemptionRequest(coupon: Coupon): { ok: boolean; reason?: "empty" | "pending" } {
@@ -538,7 +519,7 @@ export function submitRedemptionRequest(coupon: Coupon): { ok: boolean; reason?:
     couponId: coupon.id,
     couponTitle: coupon.title,
     requestedAt: formatTimestamp(),
-    status: "待批准",
+    status: "pending",
   };
 
   writeJson(RECORDS_KEY, [record, ...getRecords()]);
@@ -552,7 +533,7 @@ export async function submitRedemptionRequestAsync(coupon: Coupon): Promise<{ ok
     return { ok: false, reason: "empty" };
   }
 
-  if (snapshot.records.some((record) => record.couponId === coupon.id && record.status === "待批准")) {
+  if (snapshot.records.some((record) => record.couponId === coupon.id && record.status === "pending")) {
     return { ok: false, reason: "pending" };
   }
 
@@ -561,7 +542,7 @@ export async function submitRedemptionRequestAsync(coupon: Coupon): Promise<{ ok
     couponId: coupon.id,
     couponTitle: coupon.title,
     requestedAt: formatTimestamp(),
-    status: "待批准",
+    status: "pending",
   };
 
   await persistSnapshot({
@@ -597,7 +578,7 @@ export function approveRedemptionRequest(requestId: string): { ok: boolean; reas
   });
   writeJson(
     RECORDS_KEY,
-    records.map((record) => (record.id === requestId ? { ...record, status: "已批准" as const, resolvedAt } : record)),
+    records.map((record) => (record.id === requestId ? { ...record, status: "approved" as const, resolvedAt } : record)),
   );
   return { ok: true };
 }
@@ -629,7 +610,7 @@ export async function approveRedemptionRequestAsync(
       [coupon.id]: remaining - 1,
     },
     records: snapshot.records.map((record) =>
-      record.id === requestId ? { ...record, status: "已批准" as const, resolvedAt } : record,
+      record.id === requestId ? { ...record, status: "approved" as const, resolvedAt } : record,
     ),
   });
   return { ok: true };
@@ -640,7 +621,7 @@ export function rejectRedemptionRequest(requestId: string): { ok: boolean } {
   writeJson(
     RECORDS_KEY,
     records.map((record) =>
-      record.id === requestId ? { ...record, status: "已婉拒" as const, resolvedAt: formatTimestamp() } : record,
+      record.id === requestId ? { ...record, status: "rejected" as const, resolvedAt: formatTimestamp() } : record,
     ),
   );
   return { ok: true };
@@ -651,7 +632,7 @@ export async function rejectRedemptionRequestAsync(requestId: string): Promise<{
   await persistSnapshot({
     ...snapshot,
     records: snapshot.records.map((record) =>
-      record.id === requestId ? { ...record, status: "已婉拒" as const, resolvedAt: formatTimestamp() } : record,
+      record.id === requestId ? { ...record, status: "rejected" as const, resolvedAt: formatTimestamp() } : record,
     ),
   });
   return { ok: true };
@@ -674,4 +655,3 @@ export async function deleteRedemptionRecordAsync(recordId: string): Promise<{ o
   });
   return { ok: true };
 }
-", "encoding": "utf-8", "sha": "38a12a0a58b520d6da70c90bc37a2a1f4d4806d2", "display_url": "https://github.com/shhan5151/iron-dad-club/blob/main/src/lib/storage.ts", "display_title": "storage.ts"}
