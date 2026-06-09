@@ -630,3 +630,21 @@ export async function rejectRedemptionRequestAsync(requestId: string): Promise<{
   });
   return { ok: true };
 }
+
+export function deleteRedemptionRecord(recordId: string): { ok: boolean } {
+  const records = getRecords();
+  writeJson(
+    RECORDS_KEY,
+    records.filter((record) => record.id !== recordId),
+  );
+  return { ok: true };
+}
+
+export async function deleteRedemptionRecordAsync(recordId: string): Promise<{ ok: boolean }> {
+  const snapshot = await loadAppSnapshot();
+  await persistSnapshot({
+    ...snapshot,
+    records: snapshot.records.filter((record) => record.id !== recordId),
+  });
+  return { ok: true };
+}
